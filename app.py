@@ -3,11 +3,22 @@ from datetime import datetime, timedelta
 import pdfkit
 from io import BytesIO
 import psycopg2
+import platform
+import shutil
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 
-config = pdfkit.configuration(wkhtmltopdf=r".\wkhtmltopdf\bin\wkhtmltopdf.exe")
+if platform.system() == "Windows":
+    # Use local Windows path
+    config = pdfkit.configuration(wkhtmltopdf=r".\wkhtmltopdf\bin\wkhtmltopdf.exe")
+else:
+    # On Render (Linux), ensure wkhtmltopdf is in PATH
+    wkhtmltopdf_path = shutil.which("wkhtmltopdf")
+    if wkhtmltopdf_path is None:
+        raise OSError("wkhtmltopdf not found on system PATH. Please install it.")
+    config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
+
 
 def get_db_connection():
     return psycopg2.connect(
