@@ -184,19 +184,22 @@ def login():
 
         # Validate user
         cursor.execute('''
-            SELECT "EmpName", "UserName", "UserCategory"
+            SELECT "EmpName", "UserName", "UserCategory", "DesignationID"
             FROM "UserMaster"
             WHERE "UserName" = %s AND "UserPWD" = %s AND "OrganisationID" = %s
         ''', (username, password, org_id))
 
         user = cursor.fetchone()
-        conn.close()
+        
 
         if user:
             session['username'] = user[1]
             session['emp_name'] = user[0]
             session['user_category'] = user[2]
             session['organisation_id'] = org_id
+            cursor.execute('SELECT "DesignationName" FROM "DesignationMaster" WHERE "DesignationID" = %s',(user[3],))
+            designation = cursor.fetchone()
+            session['designation'] = designation[0]
             return redirect('/')
         else:
             return render_template('login.html', error="Invalid Username or Password")
@@ -431,16 +434,21 @@ def tasks_performed_pdf_report():
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT ph."ProjectHistoryID", ph."EventDate",pm."ProjectCode", pm."ProjectName",wm."WorkType", ph."Event", ph."Remarks"
+        SELECT ph."ProjectHistoryID", ph."EventDate",pm."ProjectCode", pm."ProjectName",wm."WorkType", ph."Event", ph."Remarks", dm."DesignationName", um."UserCategory"
         FROM "ProjectHistory" ph
         JOIN "UserMaster" um ON ph."UserID" = um."UserID"
         JOIN "ProjectMaster" pm ON ph."ProjectID" = pm."ProjectID"
         JOIN "WorkTypeMaster" wm ON ph."WorkTypeID" = wm."WorkTypeID"
+        JOIN "DesignationMaster" dm ON dm."DesignationID" = um."DesignationID"
         WHERE um."EmpName" = %s
         AND ph."EventDate" >= %s
         AND ph."EventDate" < %s
         ORDER BY ph."EventDate" DESC
     """, (empName,date_from_obj, date_to_obj))
+    
+    report_title = cursor.fetchone()
+    
+    emp_name = empName+" "+report_title[7]+" "+report_title[8]
 
     data = cursor.fetchall()
 
@@ -455,7 +463,7 @@ def tasks_performed_pdf_report():
             "WorkType": row[4],
         } for i, row in enumerate(data)]
     
-    rendered = render_template("tasks_performed_report_pdf.html",records=records)
+    rendered = render_template("tasks_performed_report_pdf.html",records=records,empName=emp_name)
 
     # Update this path to your local wkhtmltopdf
     # config = pdfkit.configuration(wkhtmltopdf=r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe")
