@@ -47,10 +47,10 @@
             <div class="collapse navbar-collapse" id="navbarNavDropdown">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     <li class="nav-item">
-                        <a class="nav-link active" aria-current="page" href="{{url_for("dashboard")}}">Dashboard</a>
+                        <a class="nav-link" aria-current="page" href="{{url_for("dashboard")}}">Dashboard</a>
                     </li>
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownProfile"
+                        <a class="nav-link dropdown-toggle active" href="#" id="navbarDropdownProfile"
                         role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             Tasks Management
                         </a>
@@ -58,7 +58,7 @@
                             <li>
                                 <a class="dropdown-item" href="{{url_for("project_history")}}">Project History</a>
                             </li>
-                            <li><a class="dropdown-item" href="{{url_for("tasks_assigned")}}">Tasks Assigned</a></li>
+                            <li><a class="dropdown-item" href="{{url_for("tasks_performed")}}">Tasks Assigned</a></li>
                         </ul>
                     </li>
                     <li class="nav-item dropdown">

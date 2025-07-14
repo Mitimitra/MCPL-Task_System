@@ -7,6 +7,8 @@ import psycopg2
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 
+config = pdfkit.configuration(wkhtmltopdf=r".\wkhtmltopdf\bin\wkhtmltopdf.exe")
+
 def get_db_connection():
     return psycopg2.connect(
         database="MCPL01",
@@ -171,7 +173,7 @@ def login():
 
         # Validate user
         cursor.execute('''
-            SELECT "EmpName", "UserName"
+            SELECT "EmpName", "UserName", "UserCategory"
             FROM "UserMaster"
             WHERE "UserName" = %s AND "UserPWD" = %s AND "OrganisationID" = %s
         ''', (username, password, org_id))
@@ -182,6 +184,7 @@ def login():
         if user:
             session['username'] = user[1]
             session['emp_name'] = user[0]
+            session['user_category'] = user[2]
             session['organisation_id'] = org_id
             return redirect('/')
         else:
@@ -207,10 +210,10 @@ def logout():
     session.clear()
     return redirect("/login")
 
-@app.route("/tasks_assigned", methods=["GET","POST"])
-def tasks_assigned():
+@app.route("/tasks_performed", methods=["GET","POST"])
+def tasks_performed():
 
-    return render_template("tasks_assigned.html",message="This Page is under Development")
+    return render_template("tasks_performed.html",message="This Page is under Development")
 
 
 @app.route("/project_hist_report", methods=["GET","POST"])
@@ -229,32 +232,70 @@ def project_history_report():
 @app.route("/task_performed_report", methods=["GET","POST"])
 def tasks_performed_report():
     
-    # conn = get_db_connection()
-    # cursor = conn.cursor()
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('SELECT "UserID", "EmpName" FROM "UserMaster" ORDER BY "EmpName" DESC')
+    emp_details = [{"id": row[0], "name": row[1]} for row in cursor.fetchall()]
+    
+    print(emp_details)
+    
+    # cursor.execute('SELECT "UserID", "EmpName" FROM "UserMaster" ORDER BY "EmpName"')
+    # emp_details = [{"id": row[0], "name": row[1]} for row in cursor.fetchall()]
 
-    # cursor.execute('SELECT "UserID","EmpName" FROM "UserMaster" ORDER BY "EmpName"')
-    # emp_name = [{"id":row[0],"emp_name": row[1]}for row in cursor.fetchall()]
-
-    # today = datetime.today().strftime('%Y-%m-%d')
+    today = datetime.today().strftime('%Y-%m-%d')
     
     
-    return render_template("task_performed_report.html",message="This Page is Still Under Development")
+    return render_template("task_performed_report.html", emp_details=emp_details, today=today, user_category=session['user_category'])
 
 @app.route("/get_tasks_performed_report")
 def get_tasks_performed_report():
     empName = request.args.get('emp_name')
+    date_from = request.args.get("from")
+    date_to = request.args.get("to")
     conn = get_db_connection()
     cursor = conn.cursor()
     
+    try:
+        # Convert to date format and adjust 'to' date to include the entire day
+        date_from_obj = datetime.strptime(date_from, "%Y-%m-%d")
+        date_to_obj = datetime.strptime(date_to, "%Y-%m-%d") + timedelta(days=1)
+    except Exception as e:
+        return jsonify({"error": f"Invalid date format: {e}"}), 400
+    
+    
+    print(empName)
+    
     cursor.execute("""
-        SELECT ph."ProjectHistoryID", ph."EventDate",pm."ProjectCode", pm."ProjectName",wm. , ph."Event", ph."Remarks", wm."WorkType"
+        SELECT ph."ProjectHistoryID", ph."EventDate",pm."ProjectCode", pm."ProjectName",wm."WorkType", ph."Event", ph."Remarks"
         FROM "ProjectHistory" ph
         JOIN "UserMaster" um ON ph."UserID" = um."UserID"
         JOIN "ProjectMaster" pm ON ph."ProjectID" = pm."ProjectID"
         JOIN "WorkTypeMaster" wm ON ph."WorkTypeID" = wm."WorkTypeID"
         WHERE um."EmpName" = %s
+        AND ph."EventDate" >= %s
+        AND ph."EventDate" < %s
         ORDER BY ph."EventDate" DESC
-    """, (empName,))
+    """, (empName,date_from_obj, date_to_obj))
+    
+    data = cursor.fetchall()
+    
+    print(data)
+
+    records = [
+        {
+            "SrNo": i + 1,
+            "ProjectHistoryID": row[0],
+            "EventDate": row[1].strftime('%d %b %Y'),
+            "ProjectDetails": row[2] + " : " + row[3],
+            "WorkType": row[4],
+            "Event": row[5],
+            "Remarks": row[6]
+        }
+        for i, row in enumerate(data)
+    ]
+
+    return jsonify(records)
 
 @app.route("/get_project_history_report")
 def get_project_history_report():
@@ -348,7 +389,7 @@ def project_hist_report_pdf():
     rendered = render_template("project_history_report_pdf.html",records=records)
 
     # Update this path to your local wkhtmltopdf
-    config = pdfkit.configuration(wkhtmltopdf=r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe")
+    # config = pdfkit.configuration(wkhtmltopdf=r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe")
 
     pdf = pdfkit.from_string(rendered, False, configuration=config, options={
         'page-size': 'A4',
@@ -360,6 +401,64 @@ def project_hist_report_pdf():
     })
 
     filename = f"{project_code}_history_report.pdf"
+
+    return send_file(BytesIO(pdf), as_attachment=True, download_name=filename, mimetype='application/pdf')
+
+@app.route("/tasks_performed_pdf_report")
+def tasks_performed_pdf_report():
+    empName = request.args.get("emp_name")
+    date_from = request.args.get("from")
+    date_to = request.args.get("to")
+    try:
+        # Convert to date format and adjust 'to' date to include the entire day
+        date_from_obj = datetime.strptime(date_from, "%Y-%m-%d")
+        date_to_obj = datetime.strptime(date_to, "%Y-%m-%d") + timedelta(days=1)
+    except Exception as e:
+        return jsonify({"error": f"Invalid date format: {e}"}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT ph."ProjectHistoryID", ph."EventDate",pm."ProjectCode", pm."ProjectName",wm."WorkType", ph."Event", ph."Remarks"
+        FROM "ProjectHistory" ph
+        JOIN "UserMaster" um ON ph."UserID" = um."UserID"
+        JOIN "ProjectMaster" pm ON ph."ProjectID" = pm."ProjectID"
+        JOIN "WorkTypeMaster" wm ON ph."WorkTypeID" = wm."WorkTypeID"
+        WHERE um."EmpName" = %s
+        AND ph."EventDate" >= %s
+        AND ph."EventDate" < %s
+        ORDER BY ph."EventDate" DESC
+    """, (empName,date_from_obj, date_to_obj))
+
+    data = cursor.fetchall()
+
+    records = [
+        {
+            "SrNo": i + 1,
+            "ProjectHistoryID": row[0],
+            "EventDate": row[1].strftime('%d %b %Y'),
+            "ProjectDetails": row[2]+ " : "+ row[3],
+            "Event": row[5],
+            "Remarks": row[6],
+            "WorkType": row[4],
+        } for i, row in enumerate(data)]
+    
+    rendered = render_template("tasks_performed_report_pdf.html",records=records)
+
+    # Update this path to your local wkhtmltopdf
+    # config = pdfkit.configuration(wkhtmltopdf=r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe")
+
+    pdf = pdfkit.from_string(rendered, False, configuration=config, options={
+        'page-size': 'A4',
+        'orientation': 'Landscape',
+        'margin-top': '10mm',
+        'margin-bottom': '10mm',
+        'margin-left': '10mm',
+        'margin-right': '10mm'
+    })
+
+    filename = f"{empName}_tasks_report.pdf"
 
     return send_file(BytesIO(pdf), as_attachment=True, download_name=filename, mimetype='application/pdf')
 

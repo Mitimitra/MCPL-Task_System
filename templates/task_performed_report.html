@@ -11,7 +11,6 @@
             padding: 0;
         }
         .main{
-            display: flex;
             justify-content: center;
             text-align: center;
             align-items: center;
@@ -44,7 +43,7 @@
                             <li>
                                 <a class="dropdown-item" href="{{url_for("project_history")}}">Project History</a>
                             </li>
-                            <li><a class="dropdown-item" href="{{url_for("tasks_assigned")}}">Tasks Assigned</a></li>
+                            <li><a class="dropdown-item" href="{{url_for("tasks_performed")}}">Tasks Assigned</a></li>
                         </ul>
                     </li>
                     <li class="nav-item dropdown">
@@ -55,7 +54,7 @@
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownProfile">
                             <li><a class="dropdown-item" href="{{url_for("project_history_report")}}">Project History Report</a></li>
                             <li>
-                                <a class="dropdown-item active" href="{{url_for("tasks_performed_report")}}">Task Reports</a>
+                                <a class="dropdown-item active" href="{{url_for("tasks_performed_report")}}">Task Performed Reports</a>
                             </li>
                         </ul>
                         
@@ -80,18 +79,133 @@
             </div>
         </div>
     </nav>
-    <div class="main">
-    <dotlottie-player
-            src="https://lottie.host/43f98239-accd-46a7-8d9b-4cbb438fe418/bY1E4sADvk.lottie"
-            background="transparent"
-            speed="1"
-            style="width: 300px; height: 300px"
-            loop
-            autoplay></dotlottie-player>
-            
-</div>
-<p style="text-align: center;">{{message}}</p>
-        <script src="https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs" type="module"></script>
+    <div class="main justify-content-center" style="top: 0; position: relative;">
+        <div class="container">
+        <h3 class="text-center mb-4">Tasks Performed Report</h3>
+        <form method="post">
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label for="project_code" class="form-label">Select Employee Name</label>
+                    <select class="form-select" id="emp_name" name="emp_name">
+                        {% if user_category %}
+                            {% if user_category == "User"%}
+                                <option value="{{session['emp_name']}}" selected disabled>{{session['emp_name']}}</option>
+                            {% else %}
+                                {% if emp_details %}
+                                    <option value="" selected disabled>Select Employee Name</option>
+                                    {% for e in emp_details %}
+                                        <option value="{{e.name}}">{{e.name}}</option>
+                                        {% print("From HTML",e) %}
+                                    {% endfor %}
+                                {% endif %}
+                            {% endif %}
+                        {% endif %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="date_from" class="form-label">Date From</label>
+                    <input type="date" class="form-control" id="date_from" name="date_from" value="{{ today }}">
+                </div>
+                <div class="col-md-4">
+                    <label for="date_to" class="form-label">Date To</label>
+                    <input type="date" class="form-control" id="date_to" name="date_to" value="{{ today }}">
+                </div>
+            </div>
+            <div class="input-btn justify-content-center items-center text-center d-flex">
+                <button type="submit" class="btn btn-outline-primary" id="viewReportListings">View Listings</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="listings-table" style="width: 100%; justify-content: center; align-items: center; text-align: center; display: flex;">
+        <table class="table">
+            <thead>
+                <th scope="col">Sr.No</th>
+                <th scope="col">Event Date</th>
+                <th scope="col">Project Details</th>
+                <th scope="col">Work Type</th>
+                <th scope="col">Event Desc.</th>
+                <th scope="col">Remarks</th>
+            </thead>
+            <tbody id="reportTableBody"></tbody>
+        </table>
+    </div>
+    <div class="download-report-pdf" style="display: flex; justify-content: center; align-items: center; text-align: center;">
+        <a href="#" id="downloadPdfBtn" class="btn btn-outline-danger" >Download Report</a>
+    </div>
+    </div>
+    <script>
+document.getElementById("viewReportListings").addEventListener("click", function (e) {
+    e.preventDefault(); // prevent form from submitting
+
+    const tableBody = document.getElementById("reportTableBody");
+    const emp_name = document.getElementById("emp_name").value;
+    const dateFrom = document.getElementById("date_from").value;
+    const dateTo = document.getElementById("date_to").value;
+
+    console.log(emp_name);
+
+    // Clear previous records
+    tableBody.innerHTML = "";
+
+    // Validate inputs
+    if (!emp_name || !dateFrom || !dateTo) {
+        alert("Please fill all fields.");
+        return;
+    }
+
+    fetch(`/get_tasks_performed_report?emp_name=${emp_name}&from=${dateFrom}&to=${dateTo}`)
+        .then((res) => res.json())
+        .then((data) => {
+            console.log(data);
+            if (!Array.isArray(data)) {
+                console.error("Expected array but got:", data);
+                alert("Error fetching data.");
+                return;
+            }
+
+            data.forEach((item) => {
+                const row = `
+                    <tr>
+                        <td style="width: 5%;">${item.SrNo}</td>
+                        <td style="width: 5%;">${item.EventDate}</td>
+                        <td style="width: 15%;">${item.ProjectDetails}</td>
+                        <td style="width: 10%;">${item.WorkType}</td>
+                        <td style="width: 15%;">${item.Event}</td>
+                        <td style="width: 10%;">${item.Remarks}</td>
+                    </tr>`;
+                tableBody.innerHTML += row;
+            });
+
+            if (data.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="6" class="text-center">No records found</td></tr>`;
+            }
+        })
+        .catch((err) => {
+            console.error("Fetch error:", err);
+            alert("Failed to load data.");
+        });
+});
+</script>
+<script>
+    document.getElementById("downloadPdfBtn").addEventListener("click", function (e) {
+        e.preventDefault();
+
+        console.log("Download Button Clicked")
+        
+        const empName = document.getElementById("emp_name").value;
+        const dateFrom = document.getElementById("date_from").value;
+        const dateTo = document.getElementById("date_to").value;
+
+        if (!empName || !dateFrom || !dateTo) {
+            alert("Please fill in all fields.");
+            return;
+        }
+
+        const url = `/tasks_performed_pdf_report?emp_name=${encodeURIComponent(empName)}&from=${dateFrom}&to=${dateTo}`;
+        window.open(url, '_blank');
+    });
+</script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q" crossorigin="anonymous"></script>
 </body>
 </html>
