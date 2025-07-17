@@ -126,8 +126,8 @@
                 <input type="date" class="form-control" id="event_date" name="event_date" value="{{today}}">
             </div>
             <div style="width: 20%;">
-                <select class="form-select" id="project_code" onchange="updateProjectName()" name="project_code">
-                    <option selected disabled>Select Project Code</option>
+                <select class="form-select" id="project_code" onchange="updateProjectName()" name="project_code" required>
+                    <option selected>Select Project Code</option>
                     {% for p in projects %}
                         <option value="{{ p.code }}">{{ p.code }}</option>
                     {% endfor %}
@@ -155,10 +155,10 @@
             </div>
             <div class="work-type" style="margin-left: 1rem;">
             {% if work_type %}
-            <select class="form-select" name="work_type" aria-label="Default select example">
+            <select class="form-select" name="work_type" aria-label="Default select example" required>
                 <option selected>Select Work Type</option>
                 {% for work in work_type %}
-                <option value="{{ work.id }}">{{ work.work_type }}</option>
+                    <option value="{{ work.id }}">{{ work.work_type }}</option>
                 {% endfor %}
             </select>
             {% endif %}
@@ -175,6 +175,12 @@
         <button id="submitBtn" type="submit" class="btn btn-outline-success">Save Details</button>
         <button id="viewListings" type="button" class="btn btn-outline-primary">View Listings</button>
         <a href="" class="btn btn-outline-danger">Download Report</a>
+
+        {% if errormessage %}
+        <div class="alert alert-danger" role="alert" style="width: 40%;">
+            {{errormessage}}
+        </div>
+        {% endif %}
 
 
         {% endif %}

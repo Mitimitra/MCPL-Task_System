@@ -107,6 +107,8 @@ def project_history():
     today = datetime.today().strftime('%Y-%m-%d')
 
     if request.method == "POST":
+        workTypenull = False
+        projectCodenull = False
         project_code = request.form['project_code']
         emp_name = session['emp_name']
         workType = request.form['work_type']
@@ -125,6 +127,22 @@ def project_history():
         cursor.execute('SELECT "UserID" FROM "UserMaster" WHERE "EmpName" = %s', (emp_name,))
         user_row = cursor.fetchone()
         user_id = user_row[0] if user_row else None
+        
+        if workType == 'Select Work Type' or '':
+            workTypenull = True
+        
+        if project_code == 'Select Project Code' or '':
+            projectCodenull = True
+            
+        if workTypenull == True and projectCodenull == True:
+            return render_template('project_history.html',projects=projects,work_type=work_type, today=today,errormessage="Please fill all Project Code and Work Type")
+        
+        if workTypenull == True:
+            return render_template('project_history.html',projects=projects,work_type=work_type, today=today,errormessage="Please fill Work Type")
+        
+        if projectCodenull == True:
+            return render_template('project_history.html',projects=projects,work_type=work_type, today=today,errormessage="Please fill Project Code")
+        
         
 
         if project_id and user_id:
