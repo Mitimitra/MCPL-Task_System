@@ -43,7 +43,7 @@
                             <li>
                                 <a class="dropdown-item" href="{{url_for("project_history")}}">Project History</a>
                             </li>
-                            <li><a class="dropdown-item" href="{{url_for("tasks_performed")}}">Tasks Assigned</a></li>
+                            <li><a class="dropdown-item" href="{{url_for("tasks_assigned")}}">Tasks Assigned</a></li>
                         </ul>
                     </li>
                     <li class="nav-item dropdown">
@@ -118,7 +118,7 @@
     </div>
 
     <div class="listings-table" style="width: 100%; justify-content: center; align-items: center; text-align: center; display: flex;">
-        <table class="table">
+        <table class="table" style="text-align: justify;">
             <thead>
                 <th scope="col">Sr.No</th>
                 <th scope="col">Event Date</th>
@@ -166,7 +166,7 @@ document.getElementById("viewReportListings").addEventListener("click", function
 
             data.forEach((item) => {
                 const row = `
-                    <tr>
+                    <tr">
                         <td style="width: 5%;">${item.SrNo}</td>
                         <td style="width: 5%;">${item.EventDate}</td>
                         <td style="width: 15%;">${item.ProjectDetails}</td>

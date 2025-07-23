@@ -5,6 +5,8 @@ from io import BytesIO
 import psycopg2
 import platform
 import shutil
+from utils import send_task_assignment_email
+
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
@@ -242,10 +244,50 @@ def logout():
     session.clear()
     return redirect("/login")
 
-@app.route("/tasks_performed", methods=["GET","POST"])
-def tasks_performed():
+@app.route("/tasks_assigned", methods=["GET","POST"])
+def tasks_assigned():
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute(' SELECT "ProjectID", "ProjectCode", "ProjectName" FROM "ProjectMaster" ORDER BY "ProjectCode" ASC ')
+    projects = [{"id": row[0], "code": row[1], "name": row[2]}for row in cursor.fetchall()] # Get Project Details
+    
+    cursor.execute(' SELECT "UserID", "EmpName" FROM "UserMaster" ORDER BY "EmpName" ASC ')
+    empNames = [{"id" : row[0], "name" : row[1]}for row in cursor.fetchall()] # Get User Details
+    
+    today = datetime.today().strftime('%Y-%m-%d')
+    
+    if request.method == "POST":
+        data = request.form
+        
+        print(data)
+        
+        cursor.execute(' SELECT "ProjectID" FROM "ProjectMaster" WHERE "ProjectCode" = %s ',(data["project_code"],))
+        project_id = cursor.fetchone()
+        
+        cursor.execute(' SELECT "UserID" FROM "UserMaster" WHERE "EmpName"= %s ',(data["assigned_by"],))
+        user_assigned_by = cursor.fetchone()
+        
+        cursor.execute(' SELECT "UserEmail","EmpName" FROM "UserMaster" WHERE "UserID" = %s ',(data['assign_to'],))
+        assign_to_email = cursor.fetchone()
+        
+        print(project_id)
+        
+        if data and project_id and user_assigned_by:
+            cursor.execute('''
+                    INSERT INTO public."TasksAssigned"(
+	                "ProjectID", "UserID_AssignedBy", "UserID_AssignedTo", "DateOfEntry", "TargetDate", "TaskDescription", "Remarks", "Status")
+	                VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
+            ''', (project_id[0], user_assigned_by[0], data['assign_to'], data['entry_date'], data['target_date'], data['task_desc'], data['remarks'], 'Pending'))
+            conn.commit()
+            send_task_assignment_email(assign_to_email[0],data['assigned_by'],data["project_code"], data["task_desc"],session['designation'],data['target_date'],data['project_name'],assign_to_email[1])
+            
+            return render_template("tasks_assigned.html",projects=projects, today=today, empNames=empNames, message="Task Assigned Successfully")
+            
+            
 
-    return render_template("tasks_performed.html",message="This Page is under Development")
+    return render_template("tasks_assigned.html",projects=projects,empNames=empNames,today=today)
 
 
 @app.route("/project_hist_report", methods=["GET","POST"])

@@ -9,7 +9,7 @@
 <body>
     <h3 style="text-align: center; align-items: center; justify-content: center;">Task Performed Report for {{ empName }}</h3>
     <div class="main" style="justify-content: center; align-items: center;">
-        <table class="table">
+        <table class="table" style="text-align: justify;">
         <thead>
             <th>Sr.No</th>
             <th>Event Date</th>
@@ -21,7 +21,7 @@
         {% if records %}
             <tbody>
                 {% for r in records %}
-                    <tr>
+                    <tr style="text-align: justify;">
                         <td>{{r.SrNo}}</td>
                         <td>{{r.EventDate}}</td>
                         <td>{{r.ProjectDetails}}</td>
