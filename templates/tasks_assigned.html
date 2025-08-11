@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tasks Assigned</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
         *{
+            font-family: 'Poppins',sans-serif;
             margin: 0;
             padding: 0;
         }
@@ -53,7 +55,7 @@
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownProfile">
                             <li>
-                                <a class="dropdown-item" href="{{url_for("project_history")}}">Project History</a>
+                                <a class="dropdown-item" href="{{url_for("project_history")}}">Project History/Tasks Performed</a>
                             </li>
                             <li><a class="dropdown-item" href="{{url_for("tasks_assigned")}}">Tasks Assigned</a></li>
                         </ul>
@@ -144,11 +146,23 @@
             <label for="project_name" class="form-label">Task Description</label>
             <textarea class="form-control task_desc" name="task_desc" id="task_desc" placeholder="Enter Task Description"></textarea>
         </div>
+        <!-- <div class="mb-3" style="width: 30%;">
+            <label for="task_status">Task Status (By Default Pending)</label>
+            <input type="text" name="task_status" id="task_status" value="Pending" class="form-control" style="width: 30%;" readonly disabled>
+        </div> -->
         <div class="mb-3" style="width: 30%;">
             <label for="project_name" class="form-label">Assigned By</label>
             <input type="text" class="form-control" id="assigned_by" name="assigned_by" value="{{session['emp_name']}}" readonly>
+            <label for="work_type" style="margin-top: 1rem;">Select Work Type</label>
+            <select name="work_type" id="work_type" class="form-select">
+                <option selected>Select Work Type</option>
+                {% for type in work_type %}
+                <option value="{{type.id}}">{{type.type}}</option>
+                {% endfor %}
+            </select>
             <label for="project_name" class="form-label mt-3">Select Deadline</label>
             <input type="date" class="form-control" id="target_date" name="target_date" value="{{today}}">
+            
         </div>
         <div class="mb-3" style="width: 62.4%;">
             <label for="project_name" class="form-label">Remarks</label>
@@ -156,7 +170,6 @@
         </div>
         <button id="submitBtn" type="submit" class="btn btn-outline-success">Save Details</button>
         <button id="viewListings" type="button" class="btn btn-outline-primary">View Listings</button>
-        <a href="" class="btn btn-outline-danger">Download Report</a>
 
         {% if errormessage %}
         <div class="alert alert-danger" role="alert" style="width: 40%;">

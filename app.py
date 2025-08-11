@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 import pdfkit
 from io import BytesIO
 import psycopg2
+import psycopg2.extras
 import platform
 import shutil
 from utils import send_task_assignment_email
@@ -24,17 +25,56 @@ else:
 
 def get_db_connection():
     return psycopg2.connect(
-        database="MCPL01",
-        host="dpg-d1h20lvgi27c73c75i9g-a.oregon-postgres.render.com",
+        database="MCPL-TMS",
+        host="ep-icy-bread-a16ytb6h-pooler.ap-southeast-1.aws.neon.tech",
         port="5432",
-        user="mahesh",
-        password="Jk3YQreoLTe05itpp3mz0vI4ssBCzB4x"
+        user="neondb_owner",
+        password="npg_E91uRZnoHOFw"
     )
 
 @app.route("/")
 def dashboard():
     if "emp_name" in session:
-        return render_template("dashboard.html")
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        
+        cursor.execute(""" SELECT "UserID" FROM "UserMaster" WHERE "EmpName" = %s """,(session['emp_name'],))
+        user = cursor.fetchone()
+        
+        user_id = user[0]
+        
+        print(user_id)
+        
+        # cursor.execute(""" SELECT ta."TasksAssignedID" , ta."TaskDescription", um."EmpName", pm."ProjectCode", pm."ProjectName", ta."Remarks", ta."TargetDate", ta."Status" 
+        #                FROM "TasksAssigned" ta
+        #                JOIN "UserMaster" um ON ta."UserID_AssignedBy" = um."UserID"
+        #                JOIN "ProjectMaster" pm ON ta."ProjectID" = pm."ProjectID"
+        #                WHERE ta."UserID_AssignedTo" = %s ORDER BY ta."TasksAssignedID" ASC """,(assigned_to_id,))
+        
+        # # Column Names: "TasksAssignedID", "ProjectID", "UserID_AssignedBy", "UserID_AssignedTo", "TasksAssignedGUID", "DateOfEntry", "TargetDate", "TaskDescription", "Remarks", "Status"
+        
+        # tasks_assigned = [{"SrNo" : row[0], "task_description" : row[1] , "assigned_by" : row[2], "project_details" : row[3]+" : "+row[4], "remarks": row[5], "deadline": row[6], "status" : row[7]}for row in cursor.fetchall()]
+        
+        cursor.execute(""" SELECT ph."ProjectHistoryID" , ph."Event", um."EmpName", pm."ProjectCode", pm."ProjectName", ph."Remarks"
+                       FROM "ProjectHistory" ph
+                       JOIN "UserMaster" um ON ph."UserID" = um."UserID"
+                       JOIN "ProjectMaster" pm ON ph."ProjectID" = pm."ProjectID"
+                       WHERE ph."ChangeStatus?" = true AND ph."UserID" = %s ORDER BY ph."ProjectHistoryID" ASC """,(user_id,))
+        
+        assigned_tasks = [{"SrNo" : row["ProjectHistoryID"], "task_description" : row["Event"] , "assigned_to" : row["EmpName"], "project_details" : row["ProjectCode"]+" : "+row["ProjectName"], "remarks": row["Remarks"]}for row in cursor.fetchall()]
+        
+        
+        print(assigned_tasks)
+        
+        cursor.execute(""" SELECT ph."ProjectHistoryID" , ph."Event", um."EmpName", pm."ProjectCode", pm."ProjectName", ph."Remarks", ph."TaskStatus"
+                       FROM "ProjectHistory" ph
+                       JOIN "UserMaster" um ON ph."UserID" = um."UserID"
+                       JOIN "ProjectMaster" pm ON ph."ProjectID" = pm."ProjectID"
+                       WHERE ph."ChangeStatus?" = true AND ph."AssignedBy" = %s ORDER BY ph."ProjectHistoryID" ASC """,(user_id,))
+        
+        tasks_under_review = [{"SrNo" : row["ProjectHistoryID"], "task_description" : row["Event"] , "assigned_to" : row["EmpName"], "project_details" : row["ProjectCode"]+" : "+row["ProjectName"], "remarks": row["Remarks"], "status": row["TaskStatus"]}for row in cursor.fetchall()]
+        
+        return render_template("dashboard.html",complied_review_tasks=assigned_tasks,tasks_under_review=tasks_under_review)
     else:
         return render_template("login.html", message="Your session has been timed out. Please Log in again.")
     
@@ -69,6 +109,10 @@ def get_project_history_by_code():
         for i, row in enumerate(data)
     ]
     return jsonify(records)
+
+# @app.route('/update_task_status')
+# def update_task_status():
+    
 
 
 @app.route("/get_project_history_by_id/<int:history_id>")
@@ -105,6 +149,9 @@ def project_history():
     
     cursor.execute('SELECT "WorkTypeID", "WorkType" FROM "WorkTypeMaster" ORDER BY "WorkType"')
     work_type = [{"id": row[0], "work_type": row[1]} for row in cursor.fetchall()]
+    
+    cursor.execute('SELECT "UserID", "EmpName" FROM "UserMaster" ORDER BY "EmpName" ASC;')
+    empNames = [{"id": row[0], "name" : row[1]}for row in cursor.fetchall()]
 
     today = datetime.today().strftime('%Y-%m-%d')
 
@@ -117,6 +164,7 @@ def project_history():
         entry_date = request.form['entry_date']
         event_date = request.form['event_date']
         event_desc = request.form['event_desc']
+        tasks_assigned_by = request.form['task_assigned_by']
         remarks = request.form['remarks']
         isHistory = request.form.get("isHistory","false").lower() == "true"
         history_id = request.form.get("project_history_id")
@@ -137,13 +185,13 @@ def project_history():
             projectCodenull = True
             
         if workTypenull == True and projectCodenull == True:
-            return render_template('project_history.html',projects=projects,work_type=work_type, today=today,errormessage="Please fill all Project Code and Work Type")
+            return render_template('project_history.html',projects=projects,work_type=work_type, today=today,errormessage="Please fill all Project Code and Work Type", empNames=empNames)
         
         if workTypenull == True:
-            return render_template('project_history.html',projects=projects,work_type=work_type, today=today,errormessage="Please fill Work Type")
+            return render_template('project_history.html',projects=projects,work_type=work_type, today=today,errormessage="Please fill Work Type", empNames=empNames)
         
         if projectCodenull == True:
-            return render_template('project_history.html',projects=projects,work_type=work_type, today=today,errormessage="Please fill Project Code")
+            return render_template('project_history.html',projects=projects,work_type=work_type, today=today,errormessage="Please fill Project Code", empNames=empNames)
         
         
 
@@ -156,7 +204,7 @@ def project_history():
                         "Remarks" = %s,
                         "IsHistory" = %s,
                         "WorkTypeID" = %s
-                    WHERE "ProjectHistoryID" = %s
+                    WHERE "ProjectHistoryID" = %s AND "ChangeStatus?" = false
                 ''', (event_date, event_desc, remarks, isHistory, workType, history_id))
                 conn.commit()
                 message = "Record Updated Successfully"
@@ -165,19 +213,118 @@ def project_history():
                     INSERT INTO "ProjectHistory" (
                     "ProjectID", "UserID", "ProjectHistoryGUID", 
                     "DateOfEntry", "EventDate", "Event", "Remarks", 
-                    "IsHistory", "WorkTypeID"
+                    "IsHistory", "WorkTypeID", "AssignedBy","ChangeStatus?"
                 )
-                VALUES (%s, %s, gen_random_uuid(), %s, %s, %s, %s, %s, %s)
-            ''', (project_id, user_id, entry_date, event_date, event_desc, remarks, isHistory, workType))
+                VALUES (%s, %s, gen_random_uuid(), %s, %s, %s, %s, %s, %s,%s,False)
+            ''', (project_id, user_id, entry_date, event_date, event_desc, remarks, isHistory, workType,tasks_assigned_by))
                 conn.commit()
                 message = "Record Saved Successfully"
 
         return render_template("project_history.html", 
                                message=message, 
                                projects=projects, 
-                               today=today,work_type=work_type)
+                               today=today,work_type=work_type,empNames=empNames)
 
-    return render_template("project_history.html", projects=projects, today=today, work_type=work_type)
+    return render_template("project_history.html", projects=projects, today=today, work_type=work_type, empNames=empNames)
+
+@app.route("/update_task_under_review",methods=["GET","POST"])
+def update_task_under_review():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    if request.method == "POST":
+        data = request.get_json()
+        print(data)
+        
+        taskDesc = data['task_desc']
+        remarks = data['remarks']
+        status = data['task_status']
+        taskId = data['task_id']
+        
+        cursor.execute(''' SELECT "Event" FROM "ProjectHistory" WHERE "ProjectHistoryID" = %s ''',(taskId,))
+        old_task_data = cursor.fetchone()
+        taskDesc_old = old_task_data[0]
+        
+        updated_task_desc = taskDesc_old+', (Edited): '+taskDesc
+        
+        if status == 'Cleared':
+            cursor.execute(''' UPDATE "ProjectHistory" SET 
+                       "Event" = %s, "Remarks" = %s, "TaskStatus" = %s, "ChangeStatus?" = False WHERE "ProjectHistoryID" = %s''',(updated_task_desc, remarks, status,taskId))
+            conn.commit()
+            
+            return jsonify({
+                "message": 'Task Updated Successfully',
+                "status": '200'
+            }), 200
+        
+        else:
+            cursor.execute(''' UPDATE "ProjectHistory" SET 
+                       "Event" = %s, "Remarks" = %s, "TaskStatus" = %s WHERE "ProjectHistoryID" = %s''',(updated_task_desc, remarks, status,taskId))
+            conn.commit()
+            
+            return jsonify({
+                "message": 'Task Updated Successfully',
+                "status": '200'
+            }), 200
+        
+    
+
+@app.route('/update_assigned_tasks',methods=["GET","POST"])
+def update_assigned_tasks():
+    if request.method == "POST":
+        
+        if request.is_json:
+            data = request.get_json()
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        print(data['task_id'])
+        
+        # cursor.execute(''' SELECT "ProjectID" FROM "ProjectHistory" WHERE "ProjectHistoryID" = %s ''',(data['task_id'],))
+        
+        # project = cursor.fetchone()
+        
+        # project_id = project[0]
+        
+        # cursor.execute(''' SELECT "UserID" FROM "UserMaster" WHERE "EmpName" = %s ''',(session['emp_name'],))
+        
+        # user = cursor.fetchone()
+        # user_id = user[0]
+        
+        cursor.execute(''' SELECT "Event", "Remarks" FROM "ProjectHistory" WHERE "ProjectHistoryID" = %s ''',(data['task_id'],))
+        task = cursor.fetchone()
+        
+        task_desc = task[0]
+        remarks = task[1]
+
+        task_desc = task_desc + '(Edited) : '+data['task_desc']
+        remarks = remarks + '(Edited) : '+data['remarks']
+        
+        # cursor.execute('''
+        #             INSERT INTO "ProjectHistory" (
+        #             "ProjectID", "UserID", "ProjectHistoryGUID", 
+        #             "DateOfEntry", "EventDate", "Event", "Remarks", 
+        #             "IsHistory", "WorkTypeID"
+        #         )
+        #         VALUES (%s, %s, gen_random_uuid(), %s, %s, %s, %s, %s, %s)
+        #     ''', (project_id, user_id, entry_date, event_date, event_desc, remarks, isHistory, workType))
+        
+        # cursor.execute('''
+        #     INSERT INTO "ProjectHistory"(
+        #     "ProjectID","UserID","DateOfEntry","EventDate","Event","Remarks","IsHistory","WorkTypeID","TasksAssignedID","ChangeStatus?"
+        #     ) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        # ''',(project_id, user_id, datetime.today(), datetime.today(), task_desc, remarks, False, 1, data['task_id'], True))
+        # conn.commit()
+        
+        cursor.execute(''' UPDATE "ProjectHistory" SET 
+                       "Event" = %s, "Remarks" = %s WHERE "ProjectHistoryID" = %s''',(task_desc, remarks, data['task_id']))
+        conn.commit()
+    
+        return jsonify({
+            "message": 'Task Updated Successfully',
+            "status": '200'
+        }), 200
 
 
 
@@ -256,6 +403,9 @@ def tasks_assigned():
     cursor.execute(' SELECT "UserID", "EmpName" FROM "UserMaster" ORDER BY "EmpName" ASC ')
     empNames = [{"id" : row[0], "name" : row[1]}for row in cursor.fetchall()] # Get User Details
     
+    cursor.execute(' SELECT "WorkTypeID", "WorkType" FROM "WorkTypeMaster" ORDER BY "WorkType" ASC ')
+    work_type = [{"id" : row[0], "type" : row[1]}for row in cursor.fetchall()]
+    
     today = datetime.today().strftime('%Y-%m-%d')
     
     if request.method == "POST":
@@ -272,22 +422,30 @@ def tasks_assigned():
         cursor.execute(' SELECT "UserEmail","EmpName" FROM "UserMaster" WHERE "UserID" = %s ',(data['assign_to'],))
         assign_to_email = cursor.fetchone()
         
+        task_desc = "Task Assigned: "+ data['task_desc'] + ". Deadline: "+data['target_date']+". Current Status: Pending"
+        
         print(project_id)
         
         if data and project_id and user_assigned_by:
+            # cursor.execute('''
+            #         INSERT INTO public."TasksAssigned"(
+	        #         "ProjectID", "UserID_AssignedBy", "UserID_AssignedTo", "DateOfEntry", "TargetDate", "TaskDescription", "Remarks", "Status")
+	        #         VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
+            # ''', (project_id[0], user_assigned_by[0], data['assign_to'], data['entry_date'], data['target_date'], data['task_desc'], data['remarks'], 'Pending'))
+            # conn.commit()
             cursor.execute('''
-                    INSERT INTO public."TasksAssigned"(
-	                "ProjectID", "UserID_AssignedBy", "UserID_AssignedTo", "DateOfEntry", "TargetDate", "TaskDescription", "Remarks", "Status")
-	                VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
-            ''', (project_id[0], user_assigned_by[0], data['assign_to'], data['entry_date'], data['target_date'], data['task_desc'], data['remarks'], 'Pending'))
+                    INSERT INTO "ProjectHistory"(
+	                "ProjectID", "AssignedBy", "UserID", "DateOfEntry","Event", "Remarks","ChangeStatus?", "EventDate", "WorkTypeID","TaskStatus")
+	                VALUES (%s, %s, %s, %s, %s, %s,True,%s,%s,'Pending');
+            ''', (project_id[0], user_assigned_by[0], data['assign_to'], data['entry_date'], task_desc, data['remarks'],data['entry_date'],data["work_type"]))
             conn.commit()
             send_task_assignment_email(assign_to_email[0],data['assigned_by'],data["project_code"], data["task_desc"],session['designation'],data['target_date'],data['project_name'],assign_to_email[1])
             
-            return render_template("tasks_assigned.html",projects=projects, today=today, empNames=empNames, message="Task Assigned Successfully")
+            return render_template("tasks_assigned.html",projects=projects, today=today, empNames=empNames, message="Task Assigned Successfully",work_type=work_type)
             
             
 
-    return render_template("tasks_assigned.html",projects=projects,empNames=empNames,today=today)
+    return render_template("tasks_assigned.html",projects=projects,empNames=empNames,today=today,work_type=work_type)
 
 
 @app.route("/project_hist_report", methods=["GET","POST"])
