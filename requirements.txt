@@ -1,5 +1,5 @@
 flask
-gunicorn
-psycopg2
-datetime
+psycopg2-binary
 pdfkit
+setuptools>=70.0.0
+wheel

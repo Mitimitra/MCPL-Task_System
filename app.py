@@ -5,6 +5,7 @@ from io import BytesIO
 import psycopg2
 import psycopg2.extras
 import platform
+import os
 import shutil
 from utils import send_task_assignment_email
 
