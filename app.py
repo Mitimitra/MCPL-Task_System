@@ -12,7 +12,6 @@ from utils import send_task_assignment_email
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
-port = int(os.environ.get("PORT",5002))
 
 if platform.system() == "Windows":
     # Use local Windows path
@@ -703,4 +702,4 @@ def tasks_performed_pdf_report():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=port, debug=True)
+    app.run(host='0.0.0.0', port=5002, debug=True)
