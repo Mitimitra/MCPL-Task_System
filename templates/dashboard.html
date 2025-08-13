@@ -140,7 +140,7 @@
                 {% for task in assigned_tasks %}
                 <tr>
                     <td>{{ task.SrNo }}</td>
-                    <td>{{ task.assigned_by }}</td>
+                    <td>{{ task.assigned_to }}</td>
                     <td style="width: 30%;">{{ task.project_details }}</td>
                     <td ><textarea class="form-control" disabled id="task_description_{{ task.SrNo }}">{{task.task_description}}</textarea></td>
                     <td style="width: 15%;"  ><input type="text" class="form-control" value="{{ task.remarks }}" disabled id="remarks_{{ task.SrNo }}"></td>
