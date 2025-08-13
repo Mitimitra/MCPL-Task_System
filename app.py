@@ -18,10 +18,11 @@ if platform.system() == "Windows":
     config = pdfkit.configuration(wkhtmltopdf=r".\wkhtmltopdf\bin\wkhtmltopdf.exe")
 else:
     print("Not Windows")
-    wkhtmltopdf_path = os.path.join(os.path.dirname(__file__), 'bin', 'wkhtmltopdf')
-    if not os.path.exists(wkhtmltopdf_path):
-        raise FileNotFoundError(f"wkhtmltopdf not found at {wkhtmltopdf_path}")
-    config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
+    config = pdfkit.configuration(wkhtmltopdf="/usr/bin/wkhtmltopdf")
+    # wkhtmltopdf_path = os.path.join(os.path.dirname(__file__), 'bin', 'wkhtmltopdf')
+    # if not os.path.exists(wkhtmltopdf_path):
+    #     raise FileNotFoundError(f"wkhtmltopdf not found at {wkhtmltopdf_path}")
+    # config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
 
 
 
