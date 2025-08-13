@@ -13,15 +13,15 @@ from utils import send_task_assignment_email
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 
-if platform.system() == "Windows":
-    # Use local Windows path
-    config = pdfkit.configuration(wkhtmltopdf=r".\wkhtmltopdf\bin\wkhtmltopdf.exe")
-else:
-    # On Render (Linux), ensure wkhtmltopdf is in PATH
-    wkhtmltopdf_path = os.path.join(os.path.dirname(__file__), 'usr', 'bin', 'wkhtmltopdf')
-    if wkhtmltopdf_path is None:
-        raise OSError("wkhtmltopdf not found on system PATH. Please install it.")
-    config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
+# if platform.system() == "Windows":
+#     # Use local Windows path
+#     config = pdfkit.configuration(wkhtmltopdf=r".\wkhtmltopdf\bin\wkhtmltopdf.exe")
+# else:
+#     # On Render (Linux), ensure wkhtmltopdf is in PATH
+#     wkhtmltopdf_path = os.path.join(os.path.dirname(__file__), 'usr', 'bin', 'wkhtmltopdf')
+#     if wkhtmltopdf_path is None:
+#         raise OSError("wkhtmltopdf not found on system PATH. Please install it.")
+#     config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
 
 
 def get_db_connection():
