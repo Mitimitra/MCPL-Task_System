@@ -3,3 +3,4 @@ psycopg2-binary
 pdfkit
 setuptools>=70.0.0
 wheel
+gunicorn
