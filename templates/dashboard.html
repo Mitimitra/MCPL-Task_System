@@ -123,12 +123,13 @@
     </table>
     {% endif %}
 
-    {% if complied_review_tasks %}
+    {% if assigned_tasks %}
     <h2>Tasks Assigned</h2>
     <table class="table">
         <thead>
             <tr>
                 <th>Sr.No</th>
+                <th>Assigned By</th>
                 <th>Project Details</th>
                 <th>Task Description</th>
                 <th>Remarks</th>
@@ -136,9 +137,10 @@
                 <th>Action</th>
             </tr>
             <tbody>
-                {% for task in complied_review_tasks %}
+                {% for task in assigned_tasks %}
                 <tr>
                     <td>{{ task.SrNo }}</td>
+                    <td>{{ task.assigned_by }}</td>
                     <td style="width: 30%;">{{ task.project_details }}</td>
                     <td ><textarea class="form-control" disabled id="task_description_{{ task.SrNo }}">{{task.task_description}}</textarea></td>
                     <td style="width: 15%;"  ><input type="text" class="form-control" value="{{ task.remarks }}" disabled id="remarks_{{ task.SrNo }}"></td>

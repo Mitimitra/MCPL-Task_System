@@ -62,7 +62,7 @@ def dashboard():
                        JOIN "ProjectMaster" pm ON ph."ProjectID" = pm."ProjectID"
                        WHERE ph."ChangeStatus?" = true AND ph."UserID" = %s ORDER BY ph."ProjectHistoryID" ASC """,(user_id,))
         
-        assigned_tasks = [{"SrNo" : row["ProjectHistoryID"], "task_description" : row["Event"] , "assigned_to" : row["EmpName"], "project_details" : row["ProjectCode"]+" : "+row["ProjectName"], "remarks": row["Remarks"]}for row in cursor.fetchall()]
+        assigned_tasks = [{"SrNo" : row["ProjectHistoryID"], "task_description" : row["Event"] , "assigned_by" : row["EmpName"], "project_details" : row["ProjectCode"]+" : "+row["ProjectName"], "remarks": row["Remarks"]}for row in cursor.fetchall()]
         
         
         print(assigned_tasks)
