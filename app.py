@@ -18,7 +18,7 @@ if platform.system() == "Windows":
     config = pdfkit.configuration(wkhtmltopdf=r".\wkhtmltopdf\bin\wkhtmltopdf.exe")
 else:
     # On Render (Linux), ensure wkhtmltopdf is in PATH
-    wkhtmltopdf_path = shutil.which("wkhtmltopdf")
+    wkhtmltopdf_path = os.path.join(os.path.dirname(__file__), 'usr', 'bin', 'wkhtmltopdf')
     if wkhtmltopdf_path is None:
         raise OSError("wkhtmltopdf not found on system PATH. Please install it.")
     config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
