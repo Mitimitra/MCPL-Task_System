@@ -39,10 +39,16 @@ def get_db_connection():
 def dashboard():
     if "emp_name" in session:
         conn = get_db_connection()
-        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cursor = conn.cursor()
         
         cursor.execute(""" SELECT "UserID" FROM "UserMaster" WHERE "EmpName" = %s """,(session['emp_name'],))
         user = cursor.fetchone()
+        
+        cursor.execute(''' SELECT "DesignationCode", "DesignationID", "DesignationName" FROM "DesignationMaster" ''')
+        designations = [{ "desig_id" : row[1], "desig_code" : row[0], "desig_name" : row[2] }for row in cursor.fetchall()]
+        
+        cursor.execute(''' SELECT "BranchID", "BranchName", "BranchCode" FROM "BranchMaster" ''')
+        branches = [{"branch_id" : row[0], "branch_code" : row[2], "branch_name" : row[1]}for row in cursor.fetchall()]
         
         user_id = user[0]
         
@@ -77,7 +83,7 @@ def dashboard():
         tasks_under_review = [{"SrNo" : row["ProjectHistoryID"], "task_description" : row["Event"] , "assigned_to" : row["EmpName"], "project_details" : row["ProjectCode"]+" : "+row["ProjectName"], "remarks": row["Remarks"], "status": row["TaskStatus"]}for row in cursor.fetchall()]
         print("Tasks Under Review",tasks_under_review)
         
-        return render_template("dashboard.html",assigned_tasks=assigned_tasks,tasks_under_review=tasks_under_review)
+        return render_template("dashboard.html",assigned_tasks=assigned_tasks,tasks_under_review=tasks_under_review,designations=designations,branches=branches)
     else:
         return render_template("login.html", message="Your session has been timed out. Please Log in again.")
     
@@ -269,7 +275,6 @@ def update_task_under_review():
                 "message": 'Task Updated Successfully',
                 "status": '200'
             }), 200
-        
     
 
 @app.route('/update_assigned_tasks',methods=["GET","POST"])
@@ -702,6 +707,53 @@ def tasks_performed_pdf_report():
 
     return send_file(BytesIO(pdf), as_attachment=True, download_name=filename, mimetype='application/pdf')
 
+@app.route("/add_project", methods=["GET","POST"])
+def add_project():
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    if request.method == "POST":
+        data = request.get_json()
+        project_code = data.get("project_code")
+        project_name = data.get("project_name")
+        client_name = data.get("clientName")
+        client_addr = data.get("clientAddr")
+        client_contact = data.get("clientContactInfo")
+        remarks = data.get("remarks")
+        
+        print(data)
+        
+        cursor.execute(''' INSERT INTO "ProjectMaster" 
+                       ("ProjectCode","ProjectName","ClientName","ClientAddress","ClientContactInfo","Remarks","OrganisationID") 
+                       VALUES (%s,%s,%s,%s,%s,%s,%s) '''
+                       ,(project_code,project_name,client_name,client_addr,client_contact,remarks,session["organisation_id"]))
+        conn.commit()
+        
+        return jsonify({
+            "message" : "Project Saved Successfully"
+        }), 200
+
+@app.route("/add_employee", methods=["GET","POST"])
+def add_employee():
+    conn=get_db_connection()
+    cursor = conn.cursor()
+    if request.method == "POST":
+        data = request.get_json()
+        emp_name = data.get("name")
+        emp_email = data.get("email")
+        emp_desig = data.get("designation_id")
+        emp_branch = data.get("branch_id")
+        emp_username = data.get("username")
+        emp_pwd = emp_username+'@7'
+        org_id = 2
+        user_category = "User"
+        
+        cursor.execute(''' INSERT INTO "UserMaster" ("UserName","UserPWD","EmpName") ''')
+        
+        
+        print(data)
+        
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5002, debug=True)
