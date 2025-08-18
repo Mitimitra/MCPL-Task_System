@@ -748,11 +748,19 @@ def add_employee():
         emp_pwd = emp_username+'@7'
         org_id = 2
         user_category = "User"
+        emp_dob = data.get("empDOB")
+        emp_doj = data.get("empDOJ")
         
-        cursor.execute(''' INSERT INTO "UserMaster" ("UserName","UserPWD","EmpName") ''')
-        
+        cursor.execute(''' INSERT INTO "UserMaster" 
+        ("UserName","UserPWD","EmpName","UserEmail","UserCategory","OrganisationID","BranchID","DesignationID","DateOfBirth","DateOfJoining") 
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) ''',(emp_username,emp_pwd,emp_name,emp_email,user_category,org_id,emp_branch,emp_desig,emp_dob,emp_doj))
+        conn.commit()
         
         print(data)
+
+        return jsonify({
+            "message" : 'User Added Successfully'
+        }), 200
         
 
 if __name__ == '__main__':

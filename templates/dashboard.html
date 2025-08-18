@@ -336,6 +336,17 @@
 
           <div class="row">
             <div class="col-md-6 mb-3">
+              <label for="empDOB" class="form-label">Date of Birth</label>
+              <input type="date" id="empDOB" class="form-control" placeholder="Select DOB">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label for="empDOJ" class="form-label">Date of Joining</label>
+              <input type="date" id="empDOJ" class="form-control" placeholder="Select DOJ">
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
               <label for="empBranch" class="form-label">Branch</label>
               <select class="form-select" id="empBranch" required onchange="updateBranchName()">
                 <option value="">-- Select Branch --</option>
@@ -551,6 +562,8 @@ document.addEventListener("DOMContentLoaded", function () {
         const empBranch = document.getElementById("empBranch").value; // branch_id
         const empBranchName = document.getElementById("empBranchName").value;
         const empUsername = document.getElementById("empUsername").value;
+        const emp_dob = document.getElementById("empDOB").value;
+        const emp_doj = document.getElementById("empDOJ").value;
 
         // Prepare payload
         const formData = {
@@ -560,7 +573,9 @@ document.addEventListener("DOMContentLoaded", function () {
             designation_name: empDesignationName,
             branch_id: empBranch,
             branch_name: empBranchName,
-            username: empUsername
+            username: empUsername,
+            empDOB : emp_dob,
+            empDOJ : emp_doj
         };
 
         console.log("Form Data:", formData); // Debugging
