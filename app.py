@@ -70,7 +70,7 @@ def dashboard():
                        JOIN "ProjectMaster" pm ON ph."ProjectID" = pm."ProjectID"
                        WHERE ph."ChangeStatus?" = true AND ph."UserID" = %s ORDER BY ph."ProjectHistoryID" ASC """,(user_id,))
         
-        assigned_tasks = [{"SrNo" : row["ProjectHistoryID"], "task_description" : row["Event"] , "assigned_to" : row["EmpName"], "project_details" : row["ProjectCode"]+" : "+row["ProjectName"], "remarks": row["Remarks"]}for row in cursor.fetchall()]
+        assigned_tasks = [{"SrNo" : row[0], "task_description" : row[1] , "assigned_to" : row[2], "project_details" : row[3]+" : "+row[4], "remarks": row[5]}for row in cursor.fetchall()]
         
         print("Tasks Assigned to: ",assigned_tasks)
         
@@ -80,7 +80,7 @@ def dashboard():
                        JOIN "ProjectMaster" pm ON ph."ProjectID" = pm."ProjectID"
                        WHERE ph."ChangeStatus?" = true AND ph."AssignedBy" = %s ORDER BY ph."ProjectHistoryID" ASC """,(user_id,))
         
-        tasks_under_review = [{"SrNo" : row["ProjectHistoryID"], "task_description" : row["Event"] , "assigned_to" : row["EmpName"], "project_details" : row["ProjectCode"]+" : "+row["ProjectName"], "remarks": row["Remarks"], "status": row["TaskStatus"]}for row in cursor.fetchall()]
+        tasks_under_review = [{"SrNo" : row[0], "task_description" : row[1] , "assigned_to" : row[2], "project_details" : row[3]+" : "+row[4], "remarks": row[5], "status": row[6]}for row in cursor.fetchall()]
         print("Tasks Under Review",tasks_under_review)
         
         return render_template("dashboard.html",assigned_tasks=assigned_tasks,tasks_under_review=tasks_under_review,designations=designations,branches=branches)
