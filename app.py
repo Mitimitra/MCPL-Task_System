@@ -47,7 +47,7 @@ def dashboard():
         cursor.execute(''' SELECT "DesignationCode", "DesignationID", "DesignationName" FROM "DesignationMaster" ''')
         designations = [{ "desig_id" : row[1], "desig_code" : row[0], "desig_name" : row[2] }for row in cursor.fetchall()]
         
-        cursor.execute(''' SELECT "BranchID", "BranchName", "BranchCode" FROM "BranchMaster" ''')
+        cursor.execute(''' SELECT "BranchID", "BranchName", "BranchCode" FROM "BranchMaster" WHERE "OrganisationID" = %s ''',(session['organisation_id'],))
         branches = [{"branch_id" : row[0], "branch_code" : row[2], "branch_name" : row[1]}for row in cursor.fetchall()]
         
         user_id = user[0]
