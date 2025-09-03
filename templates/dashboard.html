@@ -17,6 +17,33 @@
             padding-top: 56px;
         }
     </style>
+    <script>
+function applyReviewFilters() {
+  const assignedTo = document.getElementById("filterAssignedTo").value.toLowerCase();
+  const deadline = document.getElementById("filterDeadlineReview").value;
+  const projectCode = document.getElementById("filterProjectReview").value.toLowerCase();
+
+  const table = document.getElementById("tasksUnderReviewTable");
+  const rows = table.getElementsByTagName("tr");
+
+  for (let i = 1; i < rows.length; i++) {
+    let show = true;
+    const cols = rows[i].getElementsByTagName("td");
+
+    const colAssignedTo = cols[2]?.innerText.toLowerCase();
+    const colProjectCode = cols[3]?.innerText.toLowerCase();
+    const colDeadline = cols[5]?.innerText;
+
+    if (assignedTo && colAssignedTo !== assignedTo) show = false;
+    if (projectCode && !colProjectCode.includes(projectCode)) show = false;
+    if (deadline && colDeadline !== deadline) show = false;
+
+    rows[i].style.display = show ? "" : "none";
+  }
+}
+</script>
+
+
 </head>
 <body>
 
@@ -67,6 +94,8 @@
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownProfile">
                             <li><a href="#" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#addProjectModal">Add a Project</a></li>
                             <li><a href="#" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">Add an Employee</a></li>
+                            <li><a href="#" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#assignProjectToEmployeeModal">Assign Project to Employee</a></li>
+
                         </ul>
                     </li>
                 {% endif %}
@@ -79,7 +108,7 @@
                         Profile
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownProfile">
-                        <li><a class="dropdown-item" href="#">Change Password</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="openPasswordModal()">Change Password</a></li>
                         <li><a class="dropdown-item" href="#">Account Settings</a></li>
                         {% if 'emp_name' in session %}
                         <li><a class="dropdown-item" href="{{ url_for("logout") }}">Logout</a></li>
@@ -98,13 +127,55 @@
 
     {% if tasks_under_review %}
     <h2>Tasks Under Review</h2>
-    <table class="table">
+
+<!-- Filters -->
+<!-- Filters -->
+<div class="row mb-3">
+  <div class="col-md-3">
+    <label for="filterAssignedTo" class="form-label">Assigned To</label>
+    <select id="filterAssignedTo" class="form-select">
+      <option value="">All</option>
+      {% for task in tasks_under_review %}
+        <option value="{{task.assigned_to}}">{{task.assigned_to}}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="col-md-3">
+    <label for="filterDeadlineReview" class="form-label">Deadline</label>
+    <select id="filterDeadlineReview" class="form-select">
+      <option value="">All</option>
+      {% for task in tasks_under_review %}
+        <option value="{{task.target_date}}">{{task.target_date}}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="col-md-3">
+    <label for="filterProjectReview" class="form-label">Project Code</label>
+    <select id="filterProjectReview" class="form-select">
+      <option value="">All</option>
+      {% for task in tasks_under_review %}
+        <option value="{{task.project_details.split(':')[0]}}">{{task.project_details.split(':')[0]}}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="col-md-3 d-flex align-items-end">
+    <button class="btn btn-primary w-100" onclick="applyReviewFilters()">Apply Filters</button>
+  </div>
+</div>
+
+
+    <table class="table" id="tasksUnderReviewTable">
         <thead>
             <tr>
                 <th>Sr.No</th>
+                <th>Assigned Date</th>
                 <th>Assigned To</th>
                 <th>Project Details</th>
                 <th>Task Description</th>
+                <th>Deadline</th>
                 <th>Remarks</th>
                 <th>Status</th>
                 <th>Action</th>
@@ -113,11 +184,13 @@
                 {% for task in tasks_under_review %}
                 <tr>
                     <td>{{ task.SrNo }}</td>
+                    <td style="width: 10%;">{{ task.date_of_entry }}</td>
                     <td>{{ task.assigned_to }}</td>
                     <td style="width: 20%;">{{ task.project_details }}</td>
-                    <td style="width: 40%;" ><textarea type="text" id="task_description_{{ task.SrNo }}" class="form-control" readonly disabled>{{ task.task_description }}</textarea></td>
-                    <td style="width: 20%;" ><input type="text" class="form-control" value="{{ task.remarks }}" disabled id="remarks_{{ task.SrNo }}"></td>
-                    <td style="width: 20%;">
+                    <td style="width: 35%;" ><textarea type="text" id="task_description_{{ task.SrNo }}" class="form-control" readonly disabled>{{ task.task_description }}</textarea></td>
+                    <td style="width: 10%;">{{task.target_date}}</td>
+                    <td style="width: 10%;" ><input type="text" class="form-control" value="{{ task.remarks }}" disabled id="remarks_{{ task.SrNo }}"></td>
+                    <td style="width: 15%;">
                         <select name="task_status" id="status_{{ task.SrNo }}" class="form-select">
                             <option value="Cleared" {% if task.status == "Cleared" %} selected {% endif %} disabled id="Cleared">Cleared</option>
                             <option value="Pending" {% if task.status == "Pending" %} selected {% endif %}disabled id="Pending">Pending</option>
@@ -134,40 +207,112 @@
     {% endif %}
 
     {% if assigned_tasks %}
-    <h2>Tasks Assigned</h2>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Sr.No</th>
-                <th>Assigned By</th>
-                <th>Project Details</th>
-                <th>Task Description</th>
-                <th>Remarks</th>
-                <th>Status</th>
-                <th>Action</th>
-            </tr>
-            <tbody>
-                {% for task in assigned_tasks %}
-                <tr>
-                    <td>{{ task.SrNo }}</td>
-                    <td>{{ task.assigned_to }}</td>
-                    <td style="width: 30%;">{{ task.project_details }}</td>
-                    <td ><textarea class="form-control" disabled id="task_description_{{ task.SrNo }}">{{task.task_description}}</textarea></td>
-                    <td style="width: 15%;"  ><input type="text" class="form-control" value="{{ task.remarks }}" disabled id="remarks_{{ task.SrNo }}"></td>
-                    <td style="width: 10%;">
-                        <select name="task_status" id="status_{{ task.SrNo }}" class="form-select" disabled>
-                            <option value="Cleared" selected disabled id="Pending">Cleared</option>
-                            <option value="Reloaded" selected disabled id="Pending">Reloaded</option>
-                            <option value="Pending" selected disabled id="Pending">Pending</option>
-                        </select>
-                    </td>
-                    <td><input type="button" class="btn btn-outline-primary" value="Edit" onclick="openTaskModal('{{ task.SrNo }}')"><input type="button" value="Save" id="save_{{ task.SrNo }}" class="btn btn-outline-success" onclick="saveStatus('{{task.SrNo}}')"></td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </thead>
-    </table>
-    {% endif %}
+<h2>Tasks Assigned</h2>
+
+<!-- Filters -->
+<div class="row mb-3">
+  <div class="col-md-3">
+    <label for="filterAssignedBy" class="form-label">Assigned By</label>
+    <select id="filterAssignedBy" class="form-select">
+      <option value="">All</option>
+      {% for task in assigned_tasks %}
+        <option value="{{task.assigned_to}}">{{task.assigned_to}}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="col-md-3">
+    <label for="filterDeadlineAssigned" class="form-label">Deadline</label>
+    <select id="filterDeadlineAssigned" class="form-select">
+      <option value="">All</option>
+      {% for task in assigned_tasks %}
+        <option value="{{task.target_date}}">{{task.target_date}}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="col-md-3">
+    <label for="filterProjectAssigned" class="form-label">Project Code</label>
+    <select id="filterProjectAssigned" class="form-select">
+      <option value="">All</option>
+      {% for task in assigned_tasks %}
+        <option value="{{task.project_details.split(':')[0]}}">{{task.project_details.split(':')[0]}}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="col-md-3 d-flex align-items-end">
+    <button class="btn btn-primary w-100" onclick="applyAssignedFilters()">Apply Filters</button>
+  </div>
+</div>
+
+
+<table class="table" id="tasksAssignedTable">
+  <thead>
+    <tr>
+      <th>Sr.No</th>
+      <th>Assigned By</th>
+      <th>Project Details</th>
+      <th>Task Description</th>
+      <th>Deadline</th>
+      <th>Remarks</th>
+      <th>Status</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for task in assigned_tasks %}
+    <tr>
+      <td>{{ task.SrNo }}</td>
+      <td>{{ task.assigned_to }}</td>
+      <td style="width: 20%;">{{ task.project_details }}</td>
+      <td style="width: 20%;"><textarea class="form-control" disabled id="task_description_{{ task.SrNo }}">{{task.task_description}}</textarea></td>
+      <td style="width: 15%;">{{task.target_date}}</td>
+      <td style="width: 15%;"><input type="text" class="form-control" value="{{ task.remarks }}" disabled id="remarks_{{ task.SrNo }}"></td>
+      <td style="width: 20%;">
+        <select name="task_status" id="status_{{ task.SrNo }}" class="form-select" disabled>
+          <option value="Cleared" {% if task.status == "Cleared" %}selected{% endif %}>Cleared</option>
+          <option value="Reloaded" {% if task.status == "Reloaded" %}selected{% endif %}>Reloaded</option>
+          <option value="Pending" {% if task.status == "Pending" %}selected{% endif %}>Pending</option>
+        </select>
+      </td>
+      <td>
+        <input type="button" class="btn btn-outline-primary" value="Edit" onclick="openTaskModal('{{ task.SrNo }}')">
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<script>
+function applyAssignedFilters() {
+  const assignedBy = document.getElementById("filterAssignedBy").value.toLowerCase();
+  const deadline = document.getElementById("filterDeadlineAssigned").value;
+  const projectCode = document.getElementById("filterProjectAssigned").value.toLowerCase();
+
+  const table = document.getElementById("tasksAssignedTable");
+  const rows = table.getElementsByTagName("tr");
+
+  for (let i = 1; i < rows.length; i++) {
+    let show = true;
+    const cols = rows[i].getElementsByTagName("td");
+
+    const colAssignedBy = cols[1]?.innerText.toLowerCase();
+    const colProjectCode = cols[2]?.innerText.toLowerCase();
+    const colDeadline = cols[4]?.innerText;
+
+    if (assignedBy && colAssignedBy !== assignedBy) show = false;
+    if (projectCode && !colProjectCode.includes(projectCode)) show = false;
+    if (deadline && colDeadline !== deadline) show = false;
+
+    rows[i].style.display = show ? "" : "none";
+  }
+}
+</script>
+
+
+
 
     <!-- Modal -->
     <!-- Modal -->
@@ -181,12 +326,12 @@
 
       <div class="modal-body">
         <div class="mb-3">
-          <label for="taskUpdateText" class="form-label">Enter Task Updates</label>
-          <textarea class="form-control" id="taskUpdateText" rows="3" required></textarea>
+          <label for="taskUpdateText" class="form-label" id="taskModalLabel1"></label>
+          <textarea class="form-control" id="taskUpdateText" rows="3" required placeholder="Enter Task Updates"></textarea>
         </div>
         <div class="mb-3">
-          <label for="taskRemarks" class="form-label">Remarks</label>
-          <input type="text" class="form-control" id="taskRemarks" required>
+          <label for="taskRemarks" class="form-label" id="taskModalLabel2"></label>
+          <input type="text" class="form-control" id="taskRemarks" placeholder="Enter Remarks Updates" required>
         </div>
         <input type="hidden" id="modal_task_id">
       </div>
@@ -237,6 +382,64 @@
   </div>
 </div>
 
+  <!-- Change Password Modal -->
+<div class="modal fade" id="passwordUpdateModal" tabindex="-1" aria-labelledby="passwordUpdateModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="passwordUpdateModalLabel">Change Password</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        
+
+        <div class="mb-3">
+          <label for="oldPassword" class="form-label">New Password</label>
+          <input type="password" class="form-control" id="newPassword">
+        </div>
+        <div class="mb-3">
+          <label for="newPassword" class="form-label">Confirm New Password</label>
+          <input type="password" class="form-control" id="confnewPassword">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" onclick="submitPasswordUpdate()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+  function openPasswordModal(userId) {
+    const modal = new bootstrap.Modal(document.getElementById("passwordUpdateModal"));
+    modal.show();
+  }
+
+function submitPasswordUpdate() {
+    const newPassword = document.getElementById("newPassword").value;
+    const confnewPassword = document.getElementById("confnewPassword").value;
+
+    if (newPassword === confnewPassword){
+      fetch("/change_password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newPassword : newPassword })
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message || "Password updated successfully");
+        bootstrap.Modal.getInstance(document.getElementById("passwordUpdateModal")).hide();
+    })
+    .catch(err => console.error("Password update failed:", err));
+    } else{
+      alert("Passwords Do not Match")
+    }
+}
+</script>
+
+
     <!-- Admin Modals -->
 
         <!-- Admin Modals -->
@@ -285,6 +488,133 @@
         </div>
       </div>
     </div>
+
+    <!-- Assign Employee to Project Modal -->
+<!-- Assign Employee to Project Modal -->
+<div class="modal fade" id="assignProjectToEmployeeModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="addProjectModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="addProjectModalLabel">Assign an Employee to Project</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body">
+        <table class="table table-bordered table-striped align-middle">
+          <thead>
+            <tr>
+              <th>Project</th>
+              <th>Architect Assigned</th>
+              <th>Engineer Assigned</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for project in projects %}
+            <tr data-project-id="{{ project.id }}">
+              <td>{{ project.proj_details }}</td>
+
+              <!-- Architect dropdown -->
+              <td>
+                <select class="form-select arch-assigned" disabled>
+                  <option value="">-- Select Architect --</option>
+                  {% for user in users %}
+                    <option value="{{ user.id }}" {% if project.archAssigned == user.id %}selected{% endif %}>
+                      {{ user.name }}
+                    </option>
+                  {% endfor %}
+                </select>
+              </td>
+
+              <!-- Engineer dropdown -->
+              <td>
+                <select class="form-select engr-assigned" disabled>
+                  <option value="">-- Select Engineer --</option>
+                  {% for user in users %}
+                    <option value="{{ user.id }}" {% if project.engrAssigned == user.id %}selected{% endif %}>
+                      {{ user.name }}
+                    </option>
+                  {% endfor %}
+                </select>
+              </td>
+
+              <!-- Action Button -->
+              <td>
+                <button class="btn btn-sm btn-primary" onclick="toggleEdit(this)">Edit</button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+function toggleEdit(button) {
+  const row = button.closest("tr");
+  const archDropdown = row.querySelector(".arch-assigned");
+  const engrDropdown = row.querySelector(".engr-assigned");
+
+  if (button.textContent === "Edit") {
+    // Enable dropdowns
+    archDropdown.disabled = false;
+    engrDropdown.disabled = false;
+
+    // Change button to Save
+    button.textContent = "Save";
+    button.classList.remove("btn-primary");
+    button.classList.add("btn-success");
+
+  } else {
+    // Gather values
+    const projectId = row.getAttribute("data-project-id");
+    const archAssigned = archDropdown.value;
+    const engrAssigned = engrDropdown.value;
+
+    // Call backend
+    fetch("/update_project_assignment", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        project_id: projectId,
+        arch_assigned: archAssigned,
+        engr_assigned: engrAssigned
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        // Disable dropdowns again
+        archDropdown.disabled = true;
+        engrDropdown.disabled = true;
+
+        // Reset button to Edit
+        button.textContent = "Edit";
+        button.classList.remove("btn-success");
+        button.classList.add("btn-primary");
+      } else {
+        alert("Error updating assignment: " + data.message);
+      }
+    })
+    .catch(err => {
+      console.error("Update failed:", err);
+    });
+  }
+}
+</script>
+
+
+<!-- Assign Project to Employee Modal Ending -->
+
 
     <!-- Add Employee Modal -->
     <div class="modal fade" id="addEmployeeModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="addEmployeeModalLabel" aria-hidden="true">
@@ -406,8 +736,8 @@ function openTaskModal(taskId) {
     const taskDescElement = document.getElementById("task_description_" + taskId);
     const remarksElement = document.getElementById("remarks_" + taskId);
 
-    document.getElementById("taskUpdateText").placeholder = taskDescElement ? taskDescElement.value || taskDescElement.innerText : '';
-    document.getElementById("taskRemarks").placeholder = remarksElement ? remarksElement.value || remarksElement.innerText : '';
+    document.getElementById("taskModalLabel1").innerHTML = "Task Update History: <br />" + (taskDescElement ? (taskDescElement.value + '<br/>' || taskDescElement.innerText + '<br />') : '');
+    document.getElementById("taskModalLabel2").innerHTML = "Remarks Updates: <br />" + (remarksElement ? (remarksElement.value + '<br />' || remarksElement.innerText + '<br />') : '');
 
     // Show the modal
     const myModal = new bootstrap.Modal(document.getElementById('taskUpdateModal'));

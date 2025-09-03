@@ -10,6 +10,38 @@
         *{
             font-family: 'Poppins',sans-serif;
         }
+        .table td, .table th {
+            vertical-align: top;
+        }
+        td.text-wrap{
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            word-break: break-word;
+            overflow: hidden;
+        }
+        /* Footer */
+        .footer {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          font-size: 12px;
+          text-align: center;
+          padding: 4px 0;
+          border-top: 1px solid #ccc;
+          color: #555;
+        }
+
+        /* Page numbers for wkhtmltopdf */
+        @page {
+          size: A4;
+          margin: 20mm;
+        }
+        @page {
+          @bottom-right {
+            content: "Page " counter(page) " of " counter(pages);
+          }
+        }
     </style>
 </head>
 <body>
@@ -25,33 +57,38 @@
             "WorkType": row[5],
         } for i, row in enumerate(data)]
     -->
-    <h3 style="text-align: justify; align-items: center; justify-content: center;">Project History Reports</h3>
+    <h3 style="text-align: justify; align-items: center; justify-content: center;">Project History Report for {{ project_details }}</h3>
     <div class="main" style="justify-content: center; align-items: center;">
-        <table class="table" style="text-align: justify;">
-        <thead>
-            <th>Sr.No</th>
-            <th>Event Date</th>
-            <th>Filled By</th>
-            <th>Work Type</th>
-            <th>Event Desc</th>
-            <th>Remarks</th>
-        </thead>
-        {% if records %}
-            <tbody>
-                {% for r in records %}
-                    <tr>
-                        <td>{{r.SrNo}}</td>
-                        <td>{{r.EventDate}}</td>
-                        <td>{{r.EmpName}}</td>
-                        <td>{{r.WorkType}}</td>
-                        <td>{{r.Event}}</td>
-                        <td>{{r.Remarks}}</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        {% endif %}
-    </table>
+        <table class="table table-bordered table-striped align-top">
+  <thead class="table-light">
+    <tr>
+      <th style="width: 5%;">Sr.No</th>
+      <th style="width: 10%;">Event Date</th>
+      <th style="width: 10%;">Filled By</th>
+      <th style="width: 10%;">Work Type</th>
+      <th style="width: 50%;">Event Desc</th>
+      <th style="width: 15%;">Remarks</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in records %}
+      <tr>
+        <td>{{r.SrNo}}</td>
+        <td>{{r.EventDate}}</td>
+        <td>{{r.EmpName}}</td>
+        <td>{{r.WorkType}}</td>
+        <td class="text-wrap" style="white-space: pre-wrap; word-break: break-word;">{{r.Event}}</td>
+        <td class="text-wrap" style="white-space: pre-wrap; word-break: break-word;">{{r.Remarks}}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+
     </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q" crossorigin="anonymous"></script>
 </body>
 </html>

@@ -120,6 +120,9 @@
                 <button type="submit" class="btn btn-outline-primary" id="viewReportListings">View Listings</button>
             </div>
         </form>
+        <div class="download-report-pdf" style="display: flex; justify-content: center; align-items: center; text-align: justify;">
+            <a href="#" id="downloadPdfBtn" class="btn btn-outline-danger" >Download Report</a>
+        </div>
     </div>
 
     <div class="listings-table" style="width: 100%; justify-content: center; align-items: center; text-align: center; display: flex;">
@@ -134,9 +137,6 @@
             </thead>
             <tbody id="reportTableBody"></tbody>
         </table>
-    </div>
-    <div class="download-report-pdf" style="display: flex; justify-content: center; align-items: center; text-align: justify;">
-        <a href="#" id="downloadPdfBtn" class="btn btn-outline-danger" >Download Report</a>
     </div>
    <script>
 document.getElementById("viewReportListings").addEventListener("click", function (e) {

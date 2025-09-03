@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, redirect, session, jsonify, send_file
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import pdfkit
 from io import BytesIO
 import psycopg2
@@ -47,6 +47,12 @@ def dashboard():
         cursor.execute(''' SELECT "DesignationCode", "DesignationID", "DesignationName" FROM "DesignationMaster" ''')
         designations = [{ "desig_id" : row[1], "desig_code" : row[0], "desig_name" : row[2] }for row in cursor.fetchall()]
         
+        cursor.execute(""" SELECT "ProjectID","ProjectCode", "ProjectName", "ArchAssigned", "EngrAssigned" FROM "ProjectMaster" ORDER BY "ProjectCode" ASC """)
+        projects = [{"id" : row[0], "proj_details" : row[1] + " : " + row[2], "archAssigned" : row[3], "engrAssigned" : row[4]}for row in cursor.fetchall()]
+        
+        cursor.execute(""" SELECT "UserID", "EmpName" FROM "UserMaster" WHERE "IsActive" = TRUE ORDER BY "EmpName" ASC """)
+        users = [{"id" : row[0], "name" : row[1]}for row in cursor.fetchall()]
+        
         cursor.execute(''' SELECT "BranchID", "BranchName", "BranchCode" FROM "BranchMaster" WHERE "OrganisationID" = %s ''',(session['organisation_id'],))
         branches = [{"branch_id" : row[0], "branch_code" : row[2], "branch_name" : row[1]}for row in cursor.fetchall()]
         
@@ -64,26 +70,26 @@ def dashboard():
         
         # tasks_assigned = [{"SrNo" : row[0], "task_description" : row[1] , "assigned_by" : row[2], "project_details" : row[3]+" : "+row[4], "remarks": row[5], "deadline": row[6], "status" : row[7]}for row in cursor.fetchall()]
         
-        cursor.execute(""" SELECT ph."ProjectHistoryID" , ph."Event", um."EmpName", pm."ProjectCode", pm."ProjectName", ph."Remarks"
+        cursor.execute(""" SELECT ph."ProjectHistoryID" , ph."Event", um."EmpName", pm."ProjectCode", pm."ProjectName", ph."Remarks", ph."TargetDate", ph."DateOfEntry"
                        FROM "ProjectHistory" ph
                        JOIN "UserMaster" um ON ph."AssignedBy" = um."UserID"
                        JOIN "ProjectMaster" pm ON ph."ProjectID" = pm."ProjectID"
                        WHERE ph."ChangeStatus?" = true AND ph."UserID" = %s ORDER BY ph."ProjectHistoryID" ASC """,(user_id,))
         
-        assigned_tasks = [{"SrNo" : row[0], "task_description" : row[1] , "assigned_to" : row[2], "project_details" : row[3]+" : "+row[4], "remarks": row[5]}for row in cursor.fetchall()]
+        assigned_tasks = [{"SrNo" : row[0], "task_description" : row[1] , "assigned_to" : row[2], "project_details" : row[3]+" : "+row[4], "remarks": row[5],"target_date":row[6], "date_of_entry" : row[7]}for row in cursor.fetchall()]
         
         print("Tasks Assigned to: ",assigned_tasks)
         
-        cursor.execute(""" SELECT ph."ProjectHistoryID" , ph."Event", um."EmpName", pm."ProjectCode", pm."ProjectName", ph."Remarks", ph."TaskStatus"
+        cursor.execute(""" SELECT ph."ProjectHistoryID" , ph."Event", um."EmpName", pm."ProjectCode", pm."ProjectName", ph."Remarks", ph."TaskStatus", ph."TargetDate", ph."DateOfEntry"
                        FROM "ProjectHistory" ph
                        JOIN "UserMaster" um ON ph."UserID" = um."UserID"
                        JOIN "ProjectMaster" pm ON ph."ProjectID" = pm."ProjectID"
                        WHERE ph."ChangeStatus?" = true AND ph."AssignedBy" = %s ORDER BY ph."ProjectHistoryID" ASC """,(user_id,))
         
-        tasks_under_review = [{"SrNo" : row[0], "task_description" : row[1] , "assigned_to" : row[2], "project_details" : row[3]+" : "+row[4], "remarks": row[5], "status": row[6]}for row in cursor.fetchall()]
+        tasks_under_review = [{"SrNo" : row[0], "task_description" : row[1] , "assigned_to" : row[2], "project_details" : row[3]+" : "+row[4], "remarks": row[5], "status": row[6],"target_date":row[7], "date_of_entry" : row[8]}for row in cursor.fetchall()]
         print("Tasks Under Review",tasks_under_review)
         
-        return render_template("dashboard.html",assigned_tasks=assigned_tasks,tasks_under_review=tasks_under_review,designations=designations,branches=branches)
+        return render_template("dashboard.html",assigned_tasks=assigned_tasks,tasks_under_review=tasks_under_review,designations=designations,branches=branches,projects=projects, users=users)
     else:
         return render_template("login.html", message="Your session has been timed out. Please Log in again.")
     
@@ -121,6 +127,31 @@ def get_project_history_by_code():
 
 # @app.route('/update_task_status')
 # def update_task_status():
+
+
+@app.route("/update_project_assignment", methods=["POST"])
+def update_project_assignment():
+    data = request.get_json()
+    project_id = data.get("project_id")
+    arch_assigned = data.get("arch_assigned") or None
+    engr_assigned = data.get("engr_assigned") or None
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        UPDATE "ProjectMaster"
+        SET "ArchAssigned" = %s, "EngrAssigned" = %s
+        WHERE "ProjectID" = %s
+    """, (arch_assigned, engr_assigned, project_id))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    return jsonify({"success": True})
+
+
     
 
 
@@ -306,8 +337,10 @@ def update_assigned_tasks():
         task_desc = task[0]
         remarks = task[1]
 
-        task_desc = task_desc + '(Edited) : '+data['task_desc']
-        remarks = remarks + '(Edited) : '+data['remarks']
+        task_desc = task_desc + '(Updated On '+date.today()+ ') : '+data['task_desc']
+        if data['remarks'] or data['remarks'] != "":
+            remarks = remarks + '(Updated On '+date.today()+ ') : '+data['remarks']
+        # remarks = remarks + '(Edited) : '+data['remarks']
         
         # cursor.execute('''
         #             INSERT INTO "ProjectHistory" (
@@ -334,6 +367,22 @@ def update_assigned_tasks():
             "status": '200'
         }), 200
 
+
+@app.route("/change_password",methods=["GET","POST"])
+def change_password():
+    if request.method == "POST":
+        data = request.get_json()
+        new_pass = data['newPassword']
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute(""" UPDATE "UserMaster" SET "UserPWD" = %s WHERE "EmpName" = %s """,(new_pass,session['emp_name']))
+        conn.commit()
+        
+        return jsonify({
+            "message": 'Passwords Changed Successfully'
+        }) , 200
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -408,7 +457,7 @@ def tasks_assigned():
     cursor.execute(' SELECT "ProjectID", "ProjectCode", "ProjectName" FROM "ProjectMaster" ORDER BY "ProjectCode" ASC ')
     projects = [{"id": row[0], "code": row[1], "name": row[2]}for row in cursor.fetchall()] # Get Project Details
     
-    cursor.execute(' SELECT "UserID", "EmpName" FROM "UserMaster" ORDER BY "EmpName" ASC ')
+    cursor.execute(' SELECT "UserID", "EmpName" FROM "UserMaster" WHERE "IsActive" = TRUE ORDER BY "EmpName" ASC ')
     empNames = [{"id" : row[0], "name" : row[1]}for row in cursor.fetchall()] # Get User Details
     
     cursor.execute(' SELECT "WorkTypeID", "WorkType" FROM "WorkTypeMaster" ORDER BY "WorkType" ASC ')
@@ -443,9 +492,9 @@ def tasks_assigned():
             # conn.commit()
             cursor.execute('''
                     INSERT INTO "ProjectHistory"(
-	                "ProjectID", "AssignedBy", "UserID", "DateOfEntry","Event", "Remarks","ChangeStatus?", "EventDate", "WorkTypeID","TaskStatus")
-	                VALUES (%s, %s, %s, %s, %s, %s,True,%s,%s,'Pending');
-            ''', (project_id[0], user_assigned_by[0], data['assign_to'], data['entry_date'], task_desc, data['remarks'],data['entry_date'],data["work_type"]))
+	                "ProjectID", "AssignedBy", "UserID", "DateOfEntry","Event", "Remarks","ChangeStatus?", "EventDate", "WorkTypeID","TaskStatus","TargetDate")
+	                VALUES (%s, %s, %s, %s, %s, %s,True,%s,%s,'Pending',%s);
+            ''', (project_id[0], user_assigned_by[0], data['assign_to'], data['entry_date'], task_desc, data['remarks'],data['entry_date'],data["work_type"],data['target_date']))
             conn.commit()
             send_task_assignment_email(assign_to_email[0],data['assigned_by'],data["project_code"], data["task_desc"],session['designation'],data['target_date'],data['project_name'],assign_to_email[1])
             
@@ -599,9 +648,16 @@ def project_hist_report_pdf():
 
     conn = get_db_connection()
     cursor = conn.cursor()
+    
+    cursor.execute(""" SELECT "ProjectName" FROM "ProjectMaster" WHERE "ProjectCode" = %s """,(project_code,))
+    project_name = cursor.fetchone()
+    
+    proj_name = project_name[0]
+    
+    project_details = project_code + " : " + proj_name
 
     cursor.execute("""
-        SELECT ph."ProjectHistoryID", ph."EventDate", um."EmpName", ph."Event", ph."Remarks", wm."WorkType"
+        SELECT ph."ProjectHistoryID", ph."EventDate", um."EmpName", ph."Event", ph."Remarks", wm."WorkType", pm."ProjectCode", pm."ProjectName"
         FROM "ProjectHistory" ph
         JOIN "UserMaster" um ON ph."UserID" = um."UserID"
         JOIN "ProjectMaster" pm ON ph."ProjectID" = pm."ProjectID"
@@ -626,7 +682,7 @@ def project_hist_report_pdf():
             "WorkType": row[5],
         } for i, row in enumerate(data)]
     
-    rendered = render_template("project_history_report_pdf.html",records=records)
+    rendered = render_template("project_history_report_pdf.html",records=records,project_details=project_details)
 
     # Update this path to your local wkhtmltopdf
     # config = pdfkit.configuration(wkhtmltopdf=r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe")
@@ -637,7 +693,12 @@ def project_hist_report_pdf():
         'margin-top': '10mm',
         'margin-bottom': '10mm',
         'margin-left': '10mm',
-        'margin-right': '10mm'
+        'margin-right': '10mm',
+        'footer-center': 'Page [page] of [toPage]',
+        'footer-right' : '© Mitimitra Consultants Pvt. Ltd., Pune',
+        'footer-font-size': '9',
+        'footer-spacing': '3',
+        'footer-line': '',  # draws a line above footer
     })
 
     filename = f"{project_code}_history_report.pdf"
