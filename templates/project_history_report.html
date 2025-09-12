@@ -125,7 +125,7 @@
         </div>
     </div>
 
-    <div class="listings-table" style="width: 100%; justify-content: center; align-items: center; text-align: center; display: flex;">
+    <div class="listings-table" style="width: 100%; justify-content: center; align-items: center; text-align: justify; display: flex;">
         <table class="table">
             <thead>
                 <th scope="col">Sr.No</th>
@@ -172,8 +172,8 @@ document.getElementById("viewReportListings").addEventListener("click", function
                         <td>${item.EventDate}</td>
                         <td>${item.EmpName}</td>
                         <td>${item.WorkType}</td>
-                        <td>${item.Event}</td>
-                        <td>${item.Remarks}</td>
+                        <td style="white-space: pre-line;">${item.Event}</td>
+                        <td style="white-space: pre-line;">${item.Remarks}</td>
                     </tr>`;
                 tableBody.innerHTML += row;
             });

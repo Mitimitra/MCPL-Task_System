@@ -173,8 +173,8 @@ document.getElementById("viewReportListings").addEventListener("click", function
                         <td style="width: 5%;">${item.EventDate}</td>
                         <td style="width: 15%;">${item.ProjectDetails}</td>
                         <td style="width: 10%;">${item.WorkType}</td>
-                        <td style="width: 15%;">${item.Event}</td>
-                        <td style="width: 10%;">${item.Remarks}</td>
+                        <td style="width: 15%; white-space: pre-line;">${item.Event}</td>
+                        <td style="width: 10%; white-space: pre-line;">${item.Remarks}</td>
                     </tr>`;
                 tableBody.innerHTML += row;
             });
