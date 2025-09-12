@@ -732,12 +732,12 @@ def tasks_performed_pdf_report():
         AND ph."EventDate" < %s
         ORDER BY ph."EventDate" DESC
     """, (empName,date_from_obj, date_to_obj))
-    
-    report_title = cursor.fetchone()
-    
-    emp_name = empName+" "+report_title[7]+" "+report_title[8]
 
     data = cursor.fetchall()
+
+    report_title = data[0]
+
+    emp_name = f"{empName} {report_title[7]} {report_title[8]}"
 
     records = [
         {
