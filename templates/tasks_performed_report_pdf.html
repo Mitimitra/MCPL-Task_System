@@ -13,7 +13,7 @@
     </style>
 </head>
 <body>
-    <h3 style="text-align: center; align-items: center; justify-content: center;">Task Performed Report for {{ empName }}</h3>
+    <h3 style="text-align: center; align-items: center; justify-content: center;">Task Performed Report for {{ empName }} from {{ date_from }} to {{ date_to }}</h3>
     <div class="main" style="justify-content: center; align-items: center;">
         <table class="table" style="text-align: justify;">
         <thead>
@@ -22,6 +22,7 @@
             <th>Project Details</th>
             <th>Work Type</th>
             <th>Event Desc</th>
+            <th>Time Spent</th>
             <th>Remarks</th>
         </thead>
         {% if records %}
@@ -33,6 +34,7 @@
                         <td>{{r.ProjectDetails}}</td>
                         <td>{{r.WorkType}}</td>
                         <td style="white-space: pre-line;">{{r.Event}}</td>
+                        <td style="width: 10%;">{{ r.TimeSpent }}</td>
                         <td>{{r.Remarks}}</td>
                     </tr>
                 {% endfor %}

@@ -99,6 +99,11 @@ function applyReviewFilters() {
                         </ul>
                     </li>
                 {% endif %}
+                {% if session['user_category'] == 'SuperAdmin' or session['user_category'] == 'Admin' %}
+                <li class="nav-item">
+                  <a href="{{ url_for("director_meetings") }}" class="nav-link">Director Meetings</a>
+                </li>
+                {% endif %}
             </ul>
 
             <ul class="navbar-nav">

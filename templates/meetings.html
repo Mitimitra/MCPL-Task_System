@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Meetings Management</title>
+
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+
+  <style>
+    .dual-list-wrapper {
+      display: flex;
+      justify-content: space-between;
+      gap: 3rem;
+      flex-wrap: wrap;
+    }
+
+    .dual-list {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .dual-list select {
+      width: 220px;
+      height: 300px;
+    }
+
+    .dual-list .btn-move {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+
+    .dual-list-label {
+      font-weight: 600;
+      font-size: 1.2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    /* Toast container positioning */
+    #toastContainer {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      z-index: 1080; /* Above navbar */
+    }
+  </style>
+</head>
+<body>
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="#">Task Management</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown"
+                aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarNavDropdown">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link" aria-current="page" href="{{url_for("dashboard")}}">Dashboard</a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownProfile"
+                       role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Tasks Management
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownProfile">
+                        <li>
+                            <a class="dropdown-item" href="{{url_for("project_history")}}">Project History / Tasks Performed</a>
+                        </li>
+                        <li><a class="dropdown-item" href="{{url_for("tasks_assigned")}}">Tasks Assigned</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="{{ url_for("dashboard") }}" id="navbarDropdownProfile"
+                       role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Reports Management
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownProfile">
+                        <li><a class="dropdown-item" href="{{url_for("project_history_report")}}">Project History Report</a></li>
+                            <li>
+                                <a class="dropdown-item" href="{{url_for("tasks_performed_report")}}">Task Reports</a>
+                            </li>
+                    </ul>
+                    
+                </li>
+                {% if session['user_category'] == 'SuperAdmin' %}
+                    <li class="nav-item dropdown">
+                        <a href="#" class="nav-link dropdown-toggle" id="navbarDropdownProfile" role="button" 
+                        data-bs-toggle="dropdown" aria-expanded="false">Admin Panel</a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownProfile">
+                            <li><a href="#" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#addProjectModal">Add a Project</a></li>
+                            <li><a href="#" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">Add an Employee</a></li>
+                            <li><a href="#" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#assignProjectToEmployeeModal">Assign Project to Employee</a></li>
+
+                        </ul>
+                    </li>
+                {% endif %}
+                {% if session['user_category'] == 'SuperAdmin' or session['user_category'] == 'Admin' %}
+                <li class="nav-item">
+                  <a href="{{ url_for("director_meetings") }}" class="nav-link active">Director Meetings</a>
+                </li>
+                {% endif %}
+            </ul>
+
+            <ul class="navbar-nav">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownProfile"
+                       role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Profile
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownProfile">
+                        <li><a class="dropdown-item" href="#" onclick="openPasswordModal()">Change Password</a></li>
+                        <li><a class="dropdown-item" href="#">Account Settings</a></li>
+                        {% if 'emp_name' in session %}
+                        <li><a class="dropdown-item" href="{{ url_for("logout") }}">Logout</a></li>
+                        {% endif %}
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- Toast container -->
+<div id="toastContainer"></div>
+
+<!-- Main Content -->
+<div class="container" style="margin-top: 6rem;">
+  <h2 class="text-center mb-4">Director Meeting MOM</h2>
+
+  <form id="momForm" method="post">
+    <!-- Meeting Date -->
+    <div class="row mb-4" style="display: flex; text-align: center; align-items: center; justify-content: center; margin: 0 auto;">
+      <label for="meeting_date" class="form-label">Select Meeting Date</label>
+      <input type="date" name="meeting_date" id="meeting_date" class="form-control" value="{{ today }}" style="width: 30%;">
+    </div>
+
+    <!-- Dual Picklists -->
+    <div class="dual-list-wrapper mb-5">
+
+      <!-- Directors -->
+      <div>
+        <label class="dual-list-label">Select Directors Present</label>
+        <div class="dual-list">
+          <div class="d-flex flex-column">
+            <label>All Directors</label>
+            <select id="available" class="form-select" multiple style="height: 20vh;">
+              {% for director in directors %}
+              <option value="{{ director.id }}" data-name="{{ director.name }}" data-index="{{ loop.index }}">{{ director.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="btn-move">
+            <button type="button" id="btnToSelected" class="btn btn-primary">&gt;</button>
+            <button type="button" id="btnToAvailable" class="btn btn-primary">&lt;</button>
+          </div>
+
+          <div class="d-flex flex-column">
+            <label>Directors Present</label>
+            <select id="selected" class="form-select" multiple style="height: 20vh;"></select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Staff -->
+      <div>
+        <label class="dual-list-label">Select Staff Present</label>
+        <div class="dual-list">
+          <div class="d-flex flex-column">
+            <label>All Staff</label>
+            <select id="staffAvailable" class="form-select" multiple style="height: 20vh;">
+              {% for member in staff_members %}
+              <option value="{{ member.id }}" data-name="{{ member.name }}" data-index="{{ loop.index }}">{{ member.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="btn-move">
+            <button type="button" id="btnToSelectedStaff" class="btn btn-primary">&gt;</button>
+            <button type="button" id="btnToAvailableStaff" class="btn btn-primary">&lt;</button>
+          </div>
+
+          <div class="d-flex flex-column">
+            <label>Staff Present</label>
+            <select id="staffSelected" class="form-select" multiple style="height: 20vh;"></select>
+          </div>
+        </div>
+      </div>
+
+      <input type="hidden" name="directors_selected" id="directors_selected">
+      <input type="hidden" name="staff_selected" id="staff_selected">
+
+    </div>
+
+    <!-- MOM + Remarks -->
+    <div class="row mb-4" style="display: flex; justify-content: center; align-items: center; text-align: center;">
+      <div class="col-md-4">
+        <label for="mom_points" class="form-label">Enter MOM Points Discussed</label>
+        <textarea name="mom_points" id="mom_points" class="form-control" rows="5"></textarea>
+      </div>
+
+      <div class="col-md-4">
+        <label for="crucial_points" class="form-label">Enter Crucial Points Discussed</label>
+        <textarea name="crucial_points" id="mom_points" class="form-control" rows="5"></textarea>
+      </div>
+
+      <div class="col-md-4">
+        <label for="remarks" class="form-label">Remarks</label>
+        <textarea name="remarks" id="remarks" class="form-control" rows="5"></textarea>
+      </div>
+
+      <div class="col-md-4" style="display: flex; justify-content: center; align-items: center; margin-top: 0.5re;">
+        <button type="submit" id="saveMOMBtn" class="btn btn-outline-success w-50">Save MOM Details</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- JavaScript to Handle Movement and Form Submission -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  function moveOptions(sourceId, targetId) {
+    const source = document.getElementById(sourceId);
+    const target = document.getElementById(targetId);
+    const selectedOptions = Array.from(source.selectedOptions);
+
+    selectedOptions.forEach(option => {
+      target.appendChild(option);
+    });
+
+    const sorted = Array.from(target.options).sort((a, b) => {
+      return parseInt(a.dataset.index) - parseInt(b.dataset.index);
+    });
+
+    target.innerHTML = '';
+    sorted.forEach(opt => target.appendChild(opt));
+  }
+
+  document.getElementById('btnToSelected').addEventListener('click', function (e) {
+    e.preventDefault();
+    moveOptions('available', 'selected');
+  });
+
+  document.getElementById('btnToAvailable').addEventListener('click', function (e) {
+    e.preventDefault();
+    moveOptions('selected', 'available');
+  });
+
+  document.getElementById('btnToSelectedStaff').addEventListener('click', function (e) {
+    e.preventDefault();
+    moveOptions('staffAvailable', 'staffSelected');
+  });
+
+  document.getElementById('btnToAvailableStaff').addEventListener('click', function (e) {
+    e.preventDefault();
+    moveOptions('staffSelected', 'staffAvailable');
+  });
+
+  // AJAX form submission
+  document.getElementById('momForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    // Build array of {id, name} for selected directors
+    const selectedDirectors = Array.from(document.getElementById('selected').options).map(opt => ({
+      id: opt.value,
+      name: opt.getAttribute('data-name')
+    }));
+
+    // Build array of {id, name} for selected staff
+    const selectedStaff = Array.from(document.getElementById('staffSelected').options).map(opt => ({
+      id: opt.value,
+      name: opt.getAttribute('data-name')
+    }));
+
+    // Set hidden fields with JSON strings
+    document.getElementById('directors_selected').value = JSON.stringify(selectedDirectors);
+    document.getElementById('staff_selected').value = JSON.stringify(selectedStaff);
+
+    const form = e.target;
+    const formData = new FormData(form);
+
+    fetch(form.action || window.location.pathname, {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest' // optional, for backend to detect AJAX
+      }
+    })
+    .then(response => {
+      if (!response.ok) return response.json().then(data => Promise.reject(data));
+      return response.json();
+    })
+    .then(data => {
+      if (data.status === "success") {
+        showToast(data.toast.header, data.toast.body);
+        form.reset();
+        // Clear selected lists after successful save
+        clearSelectedLists();
+      } else {
+        alert(data.message || "Something went wrong.");
+      }
+    })
+    .catch(errorData => {
+      alert(errorData.message || "Failed to save MOM details.");
+    });
+  });
+
+  function clearSelectedLists() {
+    const selected = document.getElementById('selected');
+    const available = document.getElementById('available');
+    const staffSelected = document.getElementById('staffSelected');
+    const staffAvailable = document.getElementById('staffAvailable');
+
+    // Move all selected directors back to available
+    Array.from(selected.options).forEach(opt => available.appendChild(opt));
+    // Move all selected staff back to available
+    Array.from(staffSelected.options).forEach(opt => staffAvailable.appendChild(opt));
+  }
+
+  // Toast function
+  function showToast(header, body) {
+    const toastContainer = document.getElementById('toastContainer');
+    const toastId = 'toast' + Date.now();
+
+    const toastHTML = `
+      <div id="${toastId}" class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+          <div class="toast-body">
+            <strong>${header}</strong><br>${body}
+          </div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+      </div>
+    `;
+
+    toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+
+    const toastElement = document.getElementById(toastId);
+    const bsToast = new bootstrap.Toast(toastElement, { delay: 4000 });
+    bsToast.show();
+
+    // Remove toast from DOM after hidden
+    toastElement.addEventListener('hidden.bs.toast', () => {
+      toastElement.remove();
+    });
+  }
+});
+</script>
+
+</body>
+</html>

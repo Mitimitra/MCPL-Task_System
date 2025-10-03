@@ -40,70 +40,99 @@
     </script>
 </head>
 <body>
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="#">Task Management</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
-                    data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown"
-                    aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="#">Task Management</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown"
+                aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
 
-            <div class="collapse navbar-collapse" id="navbarNavDropdown">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <li class="nav-item">
-                        <a class="nav-link" aria-current="page" href="{{url_for("dashboard")}}">Dashboard</a>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle active" href="#" id="navbarDropdownProfile"
-                        role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            Tasks Management
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownProfile">
-                            <li>
-                                <a class="dropdown-item" href="{{url_for("project_history")}}">Project History / Tasks Performed</a>
-                            </li>
-                            <li><a class="dropdown-item" href="{{url_for("tasks_assigned")}}">Tasks Assigned</a></li>
-                        </ul>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="{{ url_for("dashboard") }}" id="navbarDropdownProfile"
-                        role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            Reports Management
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownProfile">
-                            <li><a class="dropdown-item" href="{{url_for("project_history_report")}}">Project History Report</a></li>
+        <div class="collapse navbar-collapse" id="navbarNavDropdown">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link" aria-current="page" href="{{url_for("dashboard")}}">Dashboard</a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle active" href="#" id="navbarDropdownProfile"
+                       role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Tasks Management
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownProfile">
+                        <li>
+                            <a class="dropdown-item active" href="{{url_for("project_history")}}">Project History / Tasks Performed</a>
+                        </li>
+                        <li><a class="dropdown-item" href="{{url_for("tasks_assigned")}}">Tasks Assigned</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="{{ url_for("dashboard") }}" id="navbarDropdownProfile"
+                       role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Reports Management
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownProfile">
+                        <li><a class="dropdown-item" href="{{url_for("project_history_report")}}">Project History Report</a></li>
                             <li>
                                 <a class="dropdown-item" href="{{url_for("tasks_performed_report")}}">Task Reports</a>
                             </li>
-                        </ul>
-                        
-                    </li>
-                </ul>
-
-                <ul class="navbar-nav">
+                    </ul>
+                    
+                </li>
+                {% if session['user_category'] == 'SuperAdmin' %}
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownProfile"
-                        role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            Profile
-                        </a>
+                        <a href="#" class="nav-link dropdown-toggle" id="navbarDropdownProfile" role="button" 
+                        data-bs-toggle="dropdown" aria-expanded="false">Admin Panel</a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownProfile">
-                            <li><a class="dropdown-item" href="#">Change Password</a></li>
-                            <li><a class="dropdown-item" href="#">Account Settings</a></li>
-                            {% if 'emp_name' in session %}
-                            <li><a class="dropdown-item" href="{{ url_for("logout") }}">Logout</a></li>
-                            {% endif %}
+                            <li><a href="#" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#addProjectModal">Add a Project</a></li>
+                            <li><a href="#" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">Add an Employee</a></li>
+                            <li><a href="#" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#assignProjectToEmployeeModal">Assign Project to Employee</a></li>
+
                         </ul>
                     </li>
-                </ul>
-            </div>
+                {% endif %}
+                {% if session['user_category'] == 'SuperAdmin' or session['user_category'] == 'Admin' %}
+                <li class="nav-item">
+                  <a href="{{ url_for("director_meetings") }}" class="nav-link">Director Meetings</a>
+                </li>
+                {% endif %}
+            </ul>
+
+            <ul class="navbar-nav">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownProfile"
+                       role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Profile
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownProfile">
+                        <li><a class="dropdown-item" href="#" onclick="openPasswordModal()">Change Password</a></li>
+                        <li><a class="dropdown-item" href="#">Account Settings</a></li>
+                        {% if 'emp_name' in session %}
+                        <li><a class="dropdown-item" href="{{ url_for("logout") }}">Logout</a></li>
+                        {% endif %}
+                    </ul>
+                </li>
+            </ul>
         </div>
-    </nav>
+    </div>
+</nav>
 
 <div class="container mt-4">
 <div class="left-container">
     <h3>Tasks Performed and Project History</h3>
+    {% if errormessage %}
+    <div class="position-fixed top-0 end-0 p-3" style="z-index: 1100;">
+        <div id="errorToast" class="toast align-items-center text-bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body" id="errorToastMessage">
+                    {{ errormessage }}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
     <form method="post">
         {% if projects %}
 
@@ -111,13 +140,13 @@
         <!-- Labels in a row, NOT flexed with inputs -->
         <div class="row mb-1">
             <div class="col-md-3">
-                <label for="entry_date" class="form-label">Select Date of Entry</label>
+                <label for="entry_date" class="form-label">Select Date of Entry *</label>
             </div>
             <div class="col-md-3">
-                <label for="event_date" class="form-label">Event Date</label>
+                <label for="event_date" class="form-label">Event Date *</label>
             </div>
             <div class="col-md-3">
-                <label for="project_code" class="form-label">Select Project Code</label>
+                <label for="project_code" class="form-label">Select Project Code *</label>
             </div>
         </div>
 
@@ -143,7 +172,7 @@
 
         <!-- Project Name Textarea -->
         <div class="mb-3" style="width: 62.4%;">
-            <label for="project_name" class="form-label">Project Name</label>
+            <label for="project_name" class="form-label">Project Name *</label>
             <textarea class="form-control" id="project_name" name="project_name" placeholder="Project Name" readonly></textarea>
         </div>
         <div class="history-check" style="display: flex;">
@@ -162,7 +191,7 @@
             <div class="work-type" style="margin-left: 1rem;">
             {% if work_type %}
             <select class="form-select" name="work_type" aria-label="Default select example" required style="cursor: pointer;">
-                <option selected>Select Work Type</option>
+                <option selected>Select Work Type *</option>
                 {% for work in work_type %}
                     <option value="{{ work.id }}">{{ work.work_type }}</option>
                 {% endfor %}
@@ -171,7 +200,7 @@
         </div>
         </div>
         <div class="mb-3" style="width: 30%;">
-            <label for="task_assigned_by" class="form-label">Task Assigned By</label>
+            <label for="task_assigned_by" class="form-label">Task Assigned By *</label>
             <select name="task_assigned_by" id="task_assigned_by" class="form-select" style="cursor: pointer;" required>
                 <option selected>Select Assigner Name</option>
                 {% for emp in empNames %}
@@ -179,8 +208,12 @@
                 {% endfor %}
             </select>
         </div>
+        <div class="mb-3" style="flex-direction: column;">
+            <label for="time_spent" class="form-label">Enter the Time Spent(in hours) *</label>
+            <input type="text" name="time_spent" id="time_spent" class="form-control" style="width: 20%;">
+        </div>
         <div class="mb-3" style="width: 62.4%;">
-            <label for="project_name" class="form-label">Event Description</label>
+            <label for="project_name" class="form-label">Event Description *</label>
             <textarea class="form-control" id="event_desc" placeholder="Please Enter Event Desc." name="event_desc"></textarea>
         </div>
         <div class="mb-3" style="width: 62.4%;">
@@ -189,13 +222,6 @@
         </div>
         <button id="submitBtn" type="submit" class="btn btn-outline-success">Save Details</button>
         <button id="viewListings" type="button" class="btn btn-outline-primary">View Listings</button>
-        <a href="" class="btn btn-outline-danger">Download Report</a>
-
-        {% if errormessage %}
-        <div class="alert alert-danger" role="alert" style="width: 40%;">
-            {{errormessage}}
-        </div>
-        {% endif %}
 
 
         {% endif %}
@@ -378,6 +404,13 @@ function showSpinner() {
     // Disable the submit button to prevent multiple clicks
     document.getElementById("submitBtn").disabled = true;
 }
+document.addEventListener("DOMContentLoaded", function () {
+    const errorToast = document.getElementById("errorToast");
+    if (errorToast) {
+        const toast = new bootstrap.Toast(errorToast);
+        toast.show();
+    }
+});
 </script>
 
 

@@ -8,6 +8,8 @@ import platform
 import os
 import shutil
 from utils import send_task_assignment_email
+import json
+import uuid
 
 
 app = Flask(__name__)
@@ -152,8 +154,6 @@ def update_project_assignment():
     return jsonify({"success": True})
 
 
-    
-
 
 @app.route("/get_project_history_by_id/<int:history_id>")
 def get_project_history_by_id(history_id):
@@ -183,7 +183,9 @@ def get_project_history_by_id(history_id):
 def project_history():
     conn = get_db_connection()
     cursor = conn.cursor()
-
+    errormessage = ''
+    
+    # Fetch dropdown data
     cursor.execute('SELECT "ProjectCode", "ProjectName" FROM "ProjectMaster" ORDER BY "ProjectCode"')
     projects = [{"code": row[0], "name": row[1]} for row in cursor.fetchall()]
     
@@ -191,25 +193,56 @@ def project_history():
     work_type = [{"id": row[0], "work_type": row[1]} for row in cursor.fetchall()]
     
     cursor.execute('SELECT "UserID", "EmpName" FROM "UserMaster" ORDER BY "EmpName" ASC;')
-    empNames = [{"id": row[0], "name" : row[1]}for row in cursor.fetchall()]
+    empNames = [{"id": row[0], "name": row[1]} for row in cursor.fetchall()]
 
     today = datetime.today().strftime('%Y-%m-%d')
 
     if request.method == "POST":
-        workTypenull = False
-        projectCodenull = False
-        project_code = request.form['project_code']
-        emp_name = session['emp_name']
-        workType = request.form['work_type']
-        entry_date = request.form['entry_date']
-        event_date = request.form['event_date']
-        event_desc = request.form['event_desc']
-        tasks_assigned_by = request.form['task_assigned_by']
-        remarks = request.form['remarks']
-        isHistory = request.form.get("isHistory","false").lower() == "true"
-        history_id = request.form.get("project_history_id")
+        # Retrieve form data
+        project_code = request.form.get('project_code', '').strip()
+        emp_name = session.get('emp_name')
+        workType = request.form.get('work_type', '').strip()
+        entry_date = request.form.get('entry_date', '').strip()
+        event_date = request.form.get('event_date', '').strip()
+        event_desc = request.form.get('event_desc', '').strip()
+        tasks_assigned_by = request.form.get('task_assigned_by', '').strip()
+        remarks = request.form.get('remarks', '').strip()
+        isHistory = request.form.get("isHistory", "false").lower() == "true"
+        history_id = request.form.get("project_history_id", '').strip()
+        time_spent_raw = request.form.get('time_spent', '').strip()
 
+        # Validate time_spent and convert to float or None
+        try:
+            time_spent = float(time_spent_raw) if time_spent_raw else None
+        except ValueError:
+            time_spent = None
 
+        # Validate dropdown selections
+        workTypenull = (workType == 'Select Work Type' or workType == '')
+        projectCodenull = (project_code == 'Select Project Code' or project_code == '')
+        timeSpentNull = (time_spent == 0.0 or time_spent == None)
+        projectCodeNull = (project_code == 'Select Project Code' or project_code == '')
+        eventDescNull = (event_desc == '')
+        assignerNull = (tasks_assigned_by == 'Select Assigner Name' or tasks_assigned_by == '')
+        
+
+        if workTypenull or projectCodenull or timeSpentNull or projectCodeNull or eventDescNull or assignerNull:
+            errormessage = "Please Fill All Details with *"
+            return render_template('project_history.html', projects=projects, work_type=work_type, today=today, errormessage=errormessage, empNames=empNames)
+        # if workTypenull:
+        #     return render_template('project_history.html', projects=projects, work_type=work_type, today=today, errormessage="Please fill Work Type", empNames=empNames)
+        # if projectCodenull:
+        #     return render_template('project_history.html', projects=projects, work_type=work_type, today=today, errormessage="Please fill Project Code", empNames=empNames)
+        # if timeSpentNull:
+        #     return render_template('project_history.html', projects=projects, work_type=work_type, today=today, errormessage="Please fill Time Spent", empNames=empNames)
+        # if projectCodeNull:
+        #     return render_template('project_history.html', projects=projects, work_type=work_type, today=today, errormessage="Please Select Project", empNames=empNames)
+        # if eventDescNull:
+        #     return render_template('project_history.html', projects=projects, work_type=work_type, today=today, errormessage="Please fill Event Description", empNames=empNames)
+        # if assignerNull:
+        #     return render_template('project_history.html', projects=projects, work_type=work_type, today=today, errormessage="Please Select Task Assigner Name", empNames=empNames)
+
+        # Get ProjectID and UserID from database
         cursor.execute('SELECT "ProjectID" FROM "ProjectMaster" WHERE "ProjectCode" = %s', (project_code,))
         project_row = cursor.fetchone()
         project_id = project_row[0] if project_row else None
@@ -217,54 +250,48 @@ def project_history():
         cursor.execute('SELECT "UserID" FROM "UserMaster" WHERE "EmpName" = %s', (emp_name,))
         user_row = cursor.fetchone()
         user_id = user_row[0] if user_row else None
-        
-        if workType == 'Select Work Type' or '':
-            workTypenull = True
-        
-        if project_code == 'Select Project Code' or '':
-            projectCodenull = True
-            
-        if workTypenull == True and projectCodenull == True:
-            return render_template('project_history.html',projects=projects,work_type=work_type, today=today,errormessage="Please fill all Project Code and Work Type", empNames=empNames)
-        
-        if workTypenull == True:
-            return render_template('project_history.html',projects=projects,work_type=work_type, today=today,errormessage="Please fill Work Type", empNames=empNames)
-        
-        if projectCodenull == True:
-            return render_template('project_history.html',projects=projects,work_type=work_type, today=today,errormessage="Please fill Project Code", empNames=empNames)
-        
-        
 
         if project_id and user_id:
             if history_id:
+                # Update existing record
                 cursor.execute('''
                     UPDATE "ProjectHistory"
                     SET "EventDate" = %s,
                         "Event" = %s,
                         "Remarks" = %s,
                         "IsHistory" = %s,
-                        "WorkTypeID" = %s
+                        "WorkTypeID" = %s,
+                        "TimeSpent" = %s,
+                        "AssignedBy" = %s
                     WHERE "ProjectHistoryID" = %s AND "ChangeStatus?" = false
-                ''', (event_date, event_desc, remarks, isHistory, workType, history_id))
+                ''', (event_date, event_desc, remarks, isHistory, workType, time_spent, tasks_assigned_by, history_id))
                 conn.commit()
                 message = "Record Updated Successfully"
             else:
+                # Insert new record
                 cursor.execute('''
                     INSERT INTO "ProjectHistory" (
-                    "ProjectID", "UserID", "ProjectHistoryGUID", 
-                    "DateOfEntry", "EventDate", "Event", "Remarks", 
-                    "IsHistory", "WorkTypeID", "AssignedBy","ChangeStatus?"
-                )
-                VALUES (%s, %s, gen_random_uuid(), %s, %s, %s, %s, %s, %s,%s,False)
-            ''', (project_id, user_id, entry_date, event_date, event_desc, remarks, isHistory, workType,tasks_assigned_by))
+                        "ProjectID", "UserID", "ProjectHistoryGUID", 
+                        "DateOfEntry", "EventDate", "Event", "Remarks", 
+                        "IsHistory", "WorkTypeID", "AssignedBy", "ChangeStatus?", "TimeSpent"
+                    )
+                    VALUES (%s, %s, gen_random_uuid(), %s, %s, %s, %s, %s, %s, %s, False, %s)
+                ''', (project_id, user_id, entry_date, event_date, event_desc, remarks, isHistory, workType, tasks_assigned_by, time_spent))
                 conn.commit()
                 message = "Record Saved Successfully"
 
-        return render_template("project_history.html", 
-                               message=message, 
-                               projects=projects, 
-                               today=today,work_type=work_type,empNames=empNames)
+            return render_template("project_history.html",
+                                   message=message,
+                                   projects=projects,
+                                   today=today,
+                                   work_type=work_type,
+                                   empNames=empNames)
 
+        else:
+            err_msg = "Invalid Project or User"
+            return render_template('project_history.html', projects=projects, work_type=work_type, today=today, errormessage=err_msg, empNames=empNames)
+
+    # GET request rendering
     return render_template("project_history.html", projects=projects, today=today, work_type=work_type, empNames=empNames)
 
 @app.route("/update_task_under_review",methods=["GET","POST"])
@@ -556,7 +583,7 @@ def get_tasks_performed_report():
     print(empName)
     
     cursor.execute("""
-        SELECT ph."ProjectHistoryID", ph."EventDate",pm."ProjectCode", pm."ProjectName",wm."WorkType", ph."Event", ph."Remarks"
+        SELECT ph."ProjectHistoryID", ph."EventDate",pm."ProjectCode", pm."ProjectName",wm."WorkType", ph."Event", ph."Remarks",ph."TimeSpent"
         FROM "ProjectHistory" ph
         JOIN "UserMaster" um ON ph."UserID" = um."UserID"
         JOIN "ProjectMaster" pm ON ph."ProjectID" = pm."ProjectID"
@@ -579,7 +606,8 @@ def get_tasks_performed_report():
             "ProjectDetails": row[2] + " : " + row[3],
             "WorkType": row[4],
             "Event": row[5],
-            "Remarks": row[6]
+            "Remarks": row[6],
+            "TimeSpent": row[7]
         }
         for i, row in enumerate(data)
     ]
@@ -721,7 +749,7 @@ def tasks_performed_pdf_report():
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT ph."ProjectHistoryID", ph."EventDate",pm."ProjectCode", pm."ProjectName",wm."WorkType", ph."Event", ph."Remarks", dm."DesignationName", um."UserCategory"
+        SELECT ph."ProjectHistoryID", ph."EventDate",pm."ProjectCode", pm."ProjectName",wm."WorkType", ph."Event", ph."Remarks", dm."DesignationName", um."UserCategory", ph."TimeSpent"
         FROM "ProjectHistory" ph
         JOIN "UserMaster" um ON ph."UserID" = um."UserID"
         JOIN "ProjectMaster" pm ON ph."ProjectID" = pm."ProjectID"
@@ -748,9 +776,13 @@ def tasks_performed_pdf_report():
             "Event": row[5],
             "Remarks": row[6],
             "WorkType": row[4],
+            "TimeSpent" : row[9]
         } for i, row in enumerate(data)]
     
-    rendered = render_template("tasks_performed_report_pdf.html",records=records,empName=emp_name)
+    date_from_title = date_from_obj.strftime("%d-%m-%Y")
+    date_to_title = date_to_obj.strftime("%d-%m-%Y")
+    
+    rendered = render_template("tasks_performed_report_pdf.html",records=records,empName=emp_name,date_from=date_from_title,date_to=date_to_title)
 
     # Update this path to your local wkhtmltopdf
     # config = pdfkit.configuration(wkhtmltopdf=r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe")
@@ -822,7 +854,204 @@ def add_employee():
         return jsonify({
             "message" : 'User Added Successfully'
         }), 200
-        
+
+
+@app.route('/director_meetings', methods=["GET", "POST"])
+def director_meetings():
+    today = datetime.today().strftime('%Y-%m-%d')
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # -------------------
+    # EDIT existing meeting
+    # -------------------
+    if request.method == "POST":
+        edit_mode = request.form.get("edit_mode", "false").lower() == "true"
+        meeting_code = request.form.get("meeting_code")
+
+        meeting_date = request.form.get("meeting_date")
+        mom_points = request.form.get("mom_points")
+        remarks = request.form.get("remarks")
+        crucial_points = request.form.get("crucial_points")
+
+        directors_selected_data = json.loads(request.form.get("directors_selected") or "[]")
+        staff_selected_data = json.loads(request.form.get("staff_selected") or "[]")
+
+        if not meeting_date or not mom_points or not directors_selected_data or not staff_selected_data:
+            return jsonify({"status": "error", "message": "Missing required fields."}), 400
+
+        try:
+            meeting_dt = datetime.strptime(meeting_date, '%Y-%m-%d')
+        except ValueError:
+            return jsonify({"status": "error", "message": "Invalid meeting date format."}), 400
+
+        weekend_dt = meeting_dt + timedelta(days=(5 - meeting_dt.weekday()) % 7)
+
+        cursor.execute("""SELECT "UserID", "EmpName" FROM "UserMaster" """)
+        all_users = dict(cursor.fetchall())
+
+        directors_selected = [
+            {"id": entry["id"], "name": all_users.get(entry["id"], entry.get("name", "Unknown"))}
+            for entry in directors_selected_data
+        ]
+        staff_selected = [
+            {"id": entry["id"], "name": all_users.get(entry["id"], entry.get("name", "Unknown"))}
+            for entry in staff_selected_data
+        ]
+
+        meeting_title = f"Meeting on {meeting_date}"
+
+        if edit_mode:
+            # UPDATE existing meeting
+            update_query = """
+                UPDATE "DirectorMeetingMaster"
+                SET "MeetingDate" = %s,
+                    "WeekendDate" = %s,
+                    "ParticipantDirectors" = %s,
+                    "ParticipantStaff" = %s,
+                    "MOMPoints" = %s,
+                    "CrucialDecisions" = %s,
+                    "Remarks" = %s,
+                    "MeetingTitle" = %s
+                WHERE "MeetingCode" = %s
+            """
+            cursor.execute(update_query, (
+                meeting_date,
+                weekend_dt.date(),
+                json.dumps(directors_selected),
+                json.dumps(staff_selected),
+                mom_points,
+                crucial_points,
+                remarks,
+                meeting_title,
+                meeting_code
+            ))
+
+            conn.commit()
+            conn.close()
+
+            return jsonify({
+                "status": "success",
+                "message": "Meeting updated successfully",
+                "toast": {"header": "Updated", "body": "Meeting updated successfully"},
+                "updated_title": meeting_title
+            })
+
+        else:
+            # INSERT new meeting
+            meeting_code = str(uuid.uuid4())
+            insert_query = """
+                INSERT INTO "DirectorMeetingMaster" (
+                    "MeetingDate", "WeekendDate", "ParticipantDirectors",
+                    "ParticipantStaff", "MOMPoints", "CrucialDecisions",
+                    "Remarks", "MeetingTitle", "MeetingCode"
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """
+            cursor.execute(insert_query, (
+                meeting_date,
+                weekend_dt.date(),
+                json.dumps(directors_selected),
+                json.dumps(staff_selected),
+                mom_points,
+                crucial_points,
+                remarks,
+                meeting_title,
+                meeting_code
+            ))
+            conn.commit()
+            conn.close()
+
+            return jsonify({
+                "status": "success",
+                "message": "MOM Details Saved Successfully",
+                "toast": {"header": "Server Message", "body": "MOM Details Saved Successfully"}
+            })
+
+    # -------------------
+    # GET: Fetch single meeting data for view/edit
+    # -------------------
+    if request.method == "GET" and request.args.get("meeting_code"):
+        meeting_code = request.args.get("meeting_code")
+        cursor.execute("""
+            SELECT "MeetingDate", "MeetingTitle", "ParticipantDirectors",
+                   "ParticipantStaff", "MOMPoints", "CrucialDecisions",
+                   "Remarks", "MeetingCode"
+            FROM "DirectorMeetingMaster"
+            WHERE "MeetingCode" = %s
+        """, (meeting_code,))
+        row = cursor.fetchone()
+        conn.close()
+
+        if not row:
+            return jsonify({"status": "error", "message": "Meeting not found"}), 404
+
+        meeting_data = {
+            "MeetingDate": row[0].strftime('%Y-%m-%d'),
+            "MeetingTitle": row[1],
+            "ParticipantDirectors": json.loads(row[2]),
+            "ParticipantStaff": json.loads(row[3]),
+            "MOMPoints": row[4],
+            "CrucialDecisions": row[5],
+            "Remarks": row[6],
+            "MeetingCode": row[7]
+        }
+
+        return jsonify({"status": "success", "data": meeting_data}), 200
+
+    # -------------------
+    # GET: Default page load with users and meeting list
+    # -------------------
+
+    # Fetch Directors
+    cursor.execute("""
+        SELECT um."UserID", um."EmpName"
+        FROM "UserMaster" um
+        JOIN "BranchMaster" bm ON bm."BranchID" = um."BranchID"
+        WHERE bm."BranchCode" = 'DIR'
+    """)
+    directors = [{"id": row[0], "name": row[1]} for row in cursor.fetchall()]
+
+    # Fetch Staff
+    cursor.execute("""
+        SELECT um."UserID", um."EmpName"
+        FROM "UserMaster" um
+        JOIN "BranchMaster" bm ON bm."BranchID" = um."BranchID"
+        WHERE bm."BranchCode" != 'DIR'
+        ORDER BY um."DOrder" ASC
+    """)
+    staff_members = [{"id": row[0], "name": row[1]} for row in cursor.fetchall()]
+
+    # Fetch Existing Meetings
+    cursor.execute("""
+        SELECT "MeetingDate", "MeetingTitle", "MeetingCode"
+        FROM "DirectorMeetingMaster"
+        ORDER BY "MeetingDate" DESC
+    """)
+    meetings = cursor.fetchall()
+
+    meeting_data = [
+        {
+            "sr": idx + 1,
+            "title": row[1],
+            "code": row[2]
+        }
+        for idx, row in enumerate(meetings)
+    ]
+
+    conn.close()
+
+    return render_template(
+        'meetings.html',
+        today=today,
+        directors=directors,
+        staff_members=staff_members,
+        meeting_data=meeting_data
+    )
+
+
+
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5002, debug=True)

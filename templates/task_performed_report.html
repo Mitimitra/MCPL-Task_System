@@ -21,66 +21,83 @@
     </style>
 </head>
 <body>
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="#">Task Management</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
-                    data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown"
-                    aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="#">Task Management</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown"
+                aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
 
-            <div class="collapse navbar-collapse" id="navbarNavDropdown">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <li class="nav-item">
-                        <a class="nav-link" aria-current="page" href="{{url_for("dashboard")}}">Dashboard</a>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownProfile"
-                        role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            Tasks Management
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownProfile">
+        <div class="collapse navbar-collapse" id="navbarNavDropdown">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link" aria-current="page" href="{{url_for("dashboard")}}">Dashboard</a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownProfile"
+                       role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Tasks Management
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownProfile">
+                        <li>
+                            <a class="dropdown-item" href="{{url_for("project_history")}}">Project History / Tasks Performed</a>
+                        </li>
+                        <li><a class="dropdown-item" href="{{url_for("tasks_assigned")}}">Tasks Assigned</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle active" href="{{ url_for("dashboard") }}" id="navbarDropdownProfile"
+                       role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Reports Management
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownProfile">
+                        <li><a class="dropdown-item" href="{{url_for("project_history_report")}}">Project History Report</a></li>
                             <li>
-                                <a class="dropdown-item" href="{{url_for("project_history")}}">Project History/Tasks Performed</a>
+                                <a class="dropdown-item active" href="{{url_for("tasks_performed_report")}}">Task Reports</a>
                             </li>
-                            <li><a class="dropdown-item" href="{{url_for("tasks_assigned")}}">Tasks Assigned</a></li>
-                        </ul>
-                    </li>
+                    </ul>
+                    
+                </li>
+                {% if session['user_category'] == 'SuperAdmin' %}
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle active" href="{{ url_for("dashboard") }}" id="navbarDropdownProfile"
-                        role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            Reports Management
-                        </a>
+                        <a href="#" class="nav-link dropdown-toggle" id="navbarDropdownProfile" role="button" 
+                        data-bs-toggle="dropdown" aria-expanded="false">Admin Panel</a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownProfile">
-                            <li><a class="dropdown-item" href="{{url_for("project_history_report")}}">Project History Report</a></li>
-                            <li>
-                                <a class="dropdown-item active" href="{{url_for("tasks_performed_report")}}">Task Performed Reports</a>
-                            </li>
-                        </ul>
-                        
-                    </li>
-                </ul>
+                            <li><a href="#" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#addProjectModal">Add a Project</a></li>
+                            <li><a href="#" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">Add an Employee</a></li>
+                            <li><a href="#" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#assignProjectToEmployeeModal">Assign Project to Employee</a></li>
 
-                <ul class="navbar-nav">
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownProfile"
-                        role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            Profile
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownProfile">
-                            <li><a class="dropdown-item" href="#">Change Password</a></li>
-                            <li><a class="dropdown-item" href="#">Account Settings</a></li>
-                            {% if 'emp_name' in session %}
-                            <li><a class="dropdown-item" href="{{ url_for("logout") }}">Logout</a></li>
-                            {% endif %}
                         </ul>
                     </li>
-                </ul>
-            </div>
+                {% endif %}
+                {% if session['user_category'] == 'SuperAdmin' or session['user_category'] == 'Admin' %}
+                <li class="nav-item">
+                  <a href="{{ url_for("director_meetings") }}" class="nav-link">Director Meetings</a>
+                </li>
+                {% endif %}
+            </ul>
+
+            <ul class="navbar-nav">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownProfile"
+                       role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Profile
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownProfile">
+                        <li><a class="dropdown-item" href="#" onclick="openPasswordModal()">Change Password</a></li>
+                        <li><a class="dropdown-item" href="#">Account Settings</a></li>
+                        {% if 'emp_name' in session %}
+                        <li><a class="dropdown-item" href="{{ url_for("logout") }}">Logout</a></li>
+                        {% endif %}
+                    </ul>
+                </li>
+            </ul>
         </div>
-    </nav>
+    </div>
+</nav>
     <div class="main justify-content-center" style="top: 0; position: relative;">
         <div class="container">
         <h3 class="text-center mb-4">Tasks Performed Report</h3>
@@ -115,6 +132,7 @@
             </div>
             <div class="input-btn justify-content-center items-center text-center d-flex">
                 <button type="submit" class="btn btn-outline-primary" id="viewReportListings">View Listings</button>
+                <a href="#" id="downloadPdfBtn" class="btn btn-outline-danger" style="margin-left: 2rem; display: flex; justify-content: center; align-items: center; text-align: center;" >Download Report</a>
             </div>
         </form>
     </div>
@@ -127,13 +145,11 @@
                 <th scope="col">Project Details</th>
                 <th scope="col">Work Type</th>
                 <th scope="col">Event Desc.</th>
+                <th scope="col">Time Spent(in Hrs.)</th>
                 <th scope="col">Remarks</th>
             </thead>
             <tbody id="reportTableBody"></tbody>
         </table>
-    </div>
-    <div class="download-report-pdf" style="display: flex; justify-content: center; align-items: center; text-align: center;">
-        <a href="#" id="downloadPdfBtn" class="btn btn-outline-danger" >Download Report</a>
     </div>
     </div>
     <script>
@@ -174,6 +190,7 @@ document.getElementById("viewReportListings").addEventListener("click", function
                         <td style="width: 15%;">${item.ProjectDetails}</td>
                         <td style="width: 10%;">${item.WorkType}</td>
                         <td style="width: 15%; white-space: pre-line;">${item.Event}</td>
+                        <td style="width: 15%; white-space: pre-line;">${item.TimeSpent}</td>
                         <td style="width: 10%; white-space: pre-line;">${item.Remarks}</td>
                     </tr>`;
                 tableBody.innerHTML += row;
