@@ -685,7 +685,7 @@ def project_hist_report_pdf():
     project_details = project_code + " : " + proj_name
 
     cursor.execute("""
-        SELECT ph."ProjectHistoryID", ph."EventDate", um."EmpName", ph."Event", ph."Remarks", wm."WorkType", pm."ProjectCode", pm."ProjectName"
+        SELECT ph."ProjectHistoryID", ph."EventDate", um."EmpName", ph."Event", ph."Remarks", wm."WorkType", pm."ProjectCode", pm."ProjectName", ph."TimeSpent"
         FROM "ProjectHistory" ph
         JOIN "UserMaster" um ON ph."UserID" = um."UserID"
         JOIN "ProjectMaster" pm ON ph."ProjectID" = pm."ProjectID"
@@ -708,6 +708,7 @@ def project_hist_report_pdf():
             "Event": row[3],
             "Remarks": row[4],
             "WorkType": row[5],
+            "TimeSpent": row[8]
         } for i, row in enumerate(data)]
     
     rendered = render_template("project_history_report_pdf.html",records=records,project_details=project_details)

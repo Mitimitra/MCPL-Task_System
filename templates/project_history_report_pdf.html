@@ -25,10 +25,12 @@
         }
 
         thead { 
-            display: table-header-group; 
+            display: table-header-group;
+            text-align: center;  
         }
         tbody { 
-            display: table-row-group; 
+            display: table-row-group;
+            text-align: justify; 
         }
         tr { 
             page-break-inside: avoid; 
@@ -40,6 +42,7 @@
             vertical-align: top;
             word-break: break-word;
             white-space: pre-wrap;
+            text-align: justify;
         }
 
         th {
@@ -75,12 +78,12 @@
     <table class="report-table">
       <thead>
         <tr>
-          <th style="width: 5%;">Sr.No</th>
-          <th style="width: 10%;">Event Date</th>
-          <th style="width: 15%;">Filled By</th>
-          <th style="width: 15%;">Work Type</th>
-          <th style="width: 40%;">Event Desc</th>
-          <th style="width: 15%;">Remarks</th>
+          <th style="width: 3%;">Sr.No</th>
+          <th style="width: 5%;">Event Date</th>
+          <th style="width: 5%;">Filled By</th>
+          <th style="width: 40%;">Work Type and Event Desc</th>
+          <th style="width: 4%;">Time Spent</th>
+          <th style="width: 10%;">Remarks</th>
         </tr>
       </thead>
       <tbody>
@@ -89,8 +92,8 @@
           <td>{{ r.SrNo }}</td>
           <td>{{ r.EventDate }}</td>
           <td>{{ r.EmpName }}</td>
-          <td>{{ r.WorkType }}</td>
-          <td>{{ r.Event }}</td>
+          <td>Work Type: {{ r.WorkType }}<br />Event Description:{{ r.Event }}</td>
+          <td>{{ r.TimeSpent }}</td>
           <td>{{ r.Remarks }}</td>
         </tr>
         {% endfor %}
