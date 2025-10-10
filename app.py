@@ -104,7 +104,7 @@ def get_project_history_by_code():
     cursor = conn.cursor()
 
     cursor.execute("""
-    SELECT ph."ProjectHistoryID", ph."EventDate", um."EmpName", ph."Event", ph."Remarks", wm."WorkType", ph."IsHistory", ph."TimeSpent"
+    SELECT ph."ProjectHistoryID", ph."EventDate", um."EmpName", ph."Event", ph."Remarks", wm."WorkType", ph."IsHistory", ph."TimeSpent", pm."ProjectCode"
     FROM "ProjectHistory" ph
     JOIN "UserMaster" um ON ph."UserID" = um."UserID"
     JOIN "ProjectMaster" pm ON ph."ProjectID" = pm."ProjectID"
@@ -123,7 +123,8 @@ def get_project_history_by_code():
             "Remarks": row[4],
             "WorkType": row[5],
             "IsHistory": row[6],
-            "TimeSpent" : row[7]
+            "TimeSpent" : row[7],
+            "ProjectCode" : row[8]
         }
         for i, row in enumerate(data)
     ]
