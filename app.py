@@ -127,6 +127,7 @@ def get_project_history_by_code():
         }
         for i, row in enumerate(data)
     ]
+    
     return jsonify(records)
 
 # @app.route('/update_task_status')
@@ -172,6 +173,7 @@ def get_project_history_by_id(history_id):
     ''', (history_id,))
     row = cursor.fetchone()
     if row:
+        print(row[5])
         return jsonify({
             "ProjectHistoryID": row[0],
             "EventDate": row[1].strftime("%Y-%m-%d"),
@@ -216,9 +218,11 @@ def project_history():
         event_desc = request.form.get('event_desc', '').strip()
         tasks_assigned_by = request.form.get('task_assigned_by', '').strip()
         remarks = request.form.get('remarks', '').strip()
-        isHistory = request.form.get("isHistory", "false").lower() == "true"
+        isHistory = request.form.get("isHistory")
         history_id = request.form.get("project_history_id", '').strip()
         time_spent_raw = request.form.get('time_spent', '').strip()
+        
+        print("Project History Updation / Insertion API: ",isHistory)
 
         # Validate time_spent and convert to float or None
         try:
@@ -233,9 +237,10 @@ def project_history():
         projectCodeNull = (project_code == 'Select Project Code' or project_code == '')
         eventDescNull = (event_desc == '')
         assignerNull = (tasks_assigned_by == 'Select Assigner Name' or tasks_assigned_by == '')
+        isHistoryNull = (isHistory == '' or isHistory == None)
         
 
-        if workTypenull or projectCodenull or timeSpentNull or projectCodeNull or eventDescNull or assignerNull:
+        if workTypenull or projectCodenull or timeSpentNull or projectCodeNull or eventDescNull or assignerNull or isHistoryNull:
             errormessage = "Please Fill All Details with *"
             return render_template('project_history.html', projects=projects, work_type=work_type, today=today, errormessage=errormessage, empNames=empNames)
         # if workTypenull:
@@ -262,6 +267,7 @@ def project_history():
 
         if project_id and user_id:
             if history_id:
+                print("Project History Id: ",history_id)
                 # Update existing record
                 cursor.execute('''
                     UPDATE "ProjectHistory"
@@ -272,7 +278,7 @@ def project_history():
                         "WorkTypeID" = %s,
                         "TimeSpent" = %s,
                         "AssignedBy" = %s
-                    WHERE "ProjectHistoryID" = %s AND "ChangeStatus?" = false
+                    WHERE "ProjectHistoryID" = %s
                 ''', (event_date, event_desc, remarks, isHistory, workType, time_spent, tasks_assigned_by, history_id))
                 conn.commit()
                 message = "Record Updated Successfully"
@@ -532,7 +538,7 @@ def tasks_assigned():
 	                VALUES (%s, %s, %s, %s, %s, %s,True,%s,%s,'Pending',%s);
             ''', (project_id[0], user_assigned_by[0], data['assign_to'], data['entry_date'], task_desc, data['remarks'],data['entry_date'],data["work_type"],data['target_date']))
             conn.commit()
-            send_task_assignment_email(assign_to_email[0],data['assigned_by'],data["project_code"], data["task_desc"],session['designation'],data['target_date'],data['project_name'],assign_to_email[1])
+            # send_task_assignment_email(assign_to_email[0],data['assigned_by'],data["project_code"], data["task_desc"],session['designation'],data['target_date'],data['project_name'],assign_to_email[1])
             
             return render_template("tasks_assigned.html",projects=projects, today=today, empNames=empNames, message="Task Assigned Successfully",work_type=work_type)
             

@@ -183,7 +183,7 @@
                 </label>
             </div>
             <div class="form-check" style="margin-left: 1rem;">
-            <input class="form-check-input" type="radio" name="isHistory" id="historyNotInclude" value="false" checked style="cursor: pointer;">
+            <input class="form-check-input" type="radio" name="isHistory" id="historyNotInclude" value="false" style="cursor: pointer;">
             <label class="form-check-label" for="radioDefault2">
                 Do Not Include in History
             </label>
@@ -348,6 +348,7 @@ document.getElementById("modalListingTableBody").addEventListener("click", funct
                 console.log("fetched data..//",data);
                 const notHistory = document.getElementById("historyNotInclude");
                 const history = document.getElementById("historyInclude");
+                console.log(data.IsHistory);
                 document.getElementById("event_date").value = data.EventDate;
                 document.getElementById("event_desc").value = data.Event;
                 document.getElementById("remarks").value = data.Remarks;
@@ -356,10 +357,12 @@ document.getElementById("modalListingTableBody").addEventListener("click", funct
                 const project_code = document.getElementById('project_code');
                 const assigned_by = document.getElementById('task_assigned_by');
                 const time_spent = document.getElementById('time_spent');
-                if(data.isHistory === false){
+                if(data.IsHistory === false || data.IsHistory === 'False' || data.IsHistory === 'false'){
                     notHistory.checked = true;
+                    console.log("Not History")
                 }else{
                     history.checked = true;
+                    console.log("Is History")
                 }
 
                 if(data.AssignerName){
