@@ -190,7 +190,7 @@
             </div>
             <div class="work-type" style="margin-left: 1rem;">
             {% if work_type %}
-            <select class="form-select" name="work_type" aria-label="Default select example" required style="cursor: pointer;">
+            <select class="form-select" id="work_type" name="work_type" aria-label="Default select example" required style="cursor: pointer;">
                 <option selected>Select Work Type *</option>
                 {% for work in work_type %}
                     <option value="{{ work.id }}">{{ work.work_type }}</option>
@@ -259,6 +259,7 @@
                     <th>Event Date</th>
                     <th>Filled By</th>
                     <th>Event Description</th>
+                    <th>TimeSpent</th>
                     <th>WorkType</th>
                     <th>IsHistory?</th>
                     <th>Remarks</th>
@@ -285,23 +286,24 @@
 document.getElementById("viewListings").addEventListener("click", function () {
     const edit_state = "true";
     const save_state = "false";
-    const projectCode = document.getElementById("project_code").value;
-    const projectData = {{ projects | tojson | safe }};
+    //const projectCode = document.getElementById("project_code").value;
+    //const projectData = {{ projects | tojson | safe }};
     
-    if (!projectCode) {
-        alert("Please select a Project Code first.");
-        return;
-    }
+    //if (!projectCode) {
+    //    alert("Please select a Project Code first.");
+    //    return;
+    //}
 
-    const selectedProject = projectData.find(p => p.code === projectCode);
-    const projectName = selectedProject ? selectedProject.name : "";
+    //const selectedProject = projectData.find(p => p.code === projectCode);
+    //const projectName = selectedProject ? selectedProject.name : "";
 
     // Set dynamic modal title
     const modalTitle = document.getElementById("projectHistoryModalLabel");
-    modalTitle.textContent = `Project History of ${projectCode}, ${projectName}`;
+    //modalTitle.textContent = `Project History of ${projectCode}, ${projectName}`;
+    modalTitle.textContent = `Project History Sheet of {{session['emp_name']}}`
 
     // Load data into table
-    fetch(`/get_project_history_by_code?code=${projectCode}`)
+    fetch(`/get_project_history_by_code`)
         .then(response => response.json())
         .then(data => {
             const tbody = document.getElementById("modalListingTableBody");
@@ -317,6 +319,7 @@ document.getElementById("viewListings").addEventListener("click", function () {
                         <td>${record.EventDate}</td>
                         <td>${record.EmpName}</td>
                         <td>${record.Event}</td>
+                        <td>${record.TimeSpent}</td>
                         <td>${record.WorkType}</td>
                         <td>${record.IsHistory}</td>
                         <td>${record.Remarks}</td>
@@ -349,16 +352,34 @@ document.getElementById("modalListingTableBody").addEventListener("click", funct
                 document.getElementById("event_desc").value = data.Event;
                 document.getElementById("remarks").value = data.Remarks;
                 document.getElementById("project_history_id").value = data.ProjectHistoryID;
+                const work_type = document.getElementById('work_type');
+                const project_code = document.getElementById('project_code');
+                const assigned_by = document.getElementById('task_assigned_by');
+                const time_spent = document.getElementById('time_spent');
                 if(data.isHistory === false){
                     notHistory.checked = true;
                 }else{
                     history.checked = true;
                 }
 
+                if(data.AssignerName){
+                    assigned_by.value = data.AssignerName;
+                }
+
+                if(data.TimeSpent){
+                    time_spent.value = data.TimeSpent;
+                }
+
                 // ✅ Set the WorkType dropdown
                 if (data.WorkTypeID) {
-                    document.querySelector('select[name="work_type"]').value = data.WorkTypeID;
+                    work_type.value = data.WorkTypeID;
                 }
+
+                if(data.ProjectCode){
+                    project_code.value = data.ProjectCode;
+                    project_code.onchange = updateProjectName();
+                }
+
                 console.log("Work type Loaded..//");
 
                 // Close modal

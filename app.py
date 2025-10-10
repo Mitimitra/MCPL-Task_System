@@ -98,19 +98,20 @@ def dashboard():
 
 @app.route("/get_project_history_by_code")
 def get_project_history_by_code():
-    project_code = request.args.get("code")
+    # project_code = request.args.get("code")
+    print("Project History Code Called..//")
     conn = get_db_connection()
     cursor = conn.cursor()
 
     cursor.execute("""
-    SELECT ph."ProjectHistoryID", ph."EventDate", um."EmpName", ph."Event", ph."Remarks", wm."WorkType", ph."IsHistory"
+    SELECT ph."ProjectHistoryID", ph."EventDate", um."EmpName", ph."Event", ph."Remarks", wm."WorkType", ph."IsHistory", ph."TimeSpent"
     FROM "ProjectHistory" ph
     JOIN "UserMaster" um ON ph."UserID" = um."UserID"
     JOIN "ProjectMaster" pm ON ph."ProjectID" = pm."ProjectID"
     JOIN "WorkTypeMaster" wm ON ph."WorkTypeID" = wm."WorkTypeID"
-    WHERE pm."ProjectCode" = %s
+    WHERE um."EmpName" = %s
     ORDER BY ph."EventDate" DESC
-    """, (project_code,))
+    """, (session['emp_name'],))
     data = cursor.fetchall()
     records = [
         {
@@ -121,7 +122,8 @@ def get_project_history_by_code():
             "Event": row[3],
             "Remarks": row[4],
             "WorkType": row[5],
-            "IsHistory": row[6]
+            "IsHistory": row[6],
+            "TimeSpent" : row[7]
         }
         for i, row in enumerate(data)
     ]
@@ -160,8 +162,12 @@ def get_project_history_by_id(history_id):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute('''
-        SELECT "ProjectHistoryID", "EventDate", "Event", "Remarks", "WorkTypeID", "IsHistory"
-        FROM "ProjectHistory"
+        SELECT ph."ProjectHistoryID", ph."EventDate", ph."Event", ph."Remarks", ph."WorkTypeID", ph."IsHistory", pm."ProjectCode", um."UserID", ph."TimeSpent"
+        FROM "ProjectHistory" ph
+        JOIN "ProjectMaster" pm
+        ON pm."ProjectID" = ph."ProjectID"
+        JOIN "UserMaster" um
+        ON um."UserID" = ph."AssignedBy"
         WHERE "ProjectHistoryID" = %s
     ''', (history_id,))
     row = cursor.fetchone()
@@ -172,7 +178,10 @@ def get_project_history_by_id(history_id):
             "Event": row[2],
             "Remarks": row[3],
             "WorkTypeID": row[4],
-            "IsHistory": row[5]# Send this too
+            "IsHistory": row[5],
+            "ProjectCode": row[6],
+            "AssignerName" : row[7],
+            "TimeSpent" : row[8]# Send this too
         })
     return jsonify({})
 
