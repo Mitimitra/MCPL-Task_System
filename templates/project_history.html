@@ -174,9 +174,20 @@
             <input class="form-check-input" type="radio" name="isHistory" id="historyNotInclude" value="false" style="cursor: pointer;">
             <label class="form-check-label" for="historyNotInclude">Do Not Include in History</label>
           </div>
-          <div class="work-type" style="margin-left: 1rem;">
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="IsRework" id="rework" value="true" style="cursor: pointer; margin-left: 1rem;">
+            <label class="form-check-label" for="rework">Rework</label>
+          </div>
+          <div class="form-check" style="margin-left: 1rem;">
+            <input class="form-check-input" type="radio" name="IsRework" id="norework" value="false" style="cursor: pointer; margin-left: 1rem;" checked>
+            <label class="form-check-label" for="norework">No Rework</label>
+          </div>
+        </div>
+
+        <div class="work-type" style="margin-left: 1rem;">
             {% if work_type %}
-            <select class="form-select" id="work_type" name="work_type" aria-label="Default select example" required style="cursor: pointer;">
+            <label for="work_type" style="margin-top: 1rem;">Work Type</label>
+            <select class="form-select" id="work_type" name="work_type" aria-label="Default select example" required style="cursor: pointer; width: 20%; margin-bottom: 1rem;">
               <option selected>Select Work Type *</option>
               {% for work in work_type %}
               <option value="{{ work.id }}">{{ work.work_type }}</option>
@@ -184,7 +195,6 @@
             </select>
             {% endif %}
           </div>
-        </div>
 
         <div class="mb-3" style="width: 30%;">
           <label for="task_assigned_by" class="form-label">Task Assigned By *</label>
@@ -369,6 +379,8 @@
           .then(data => {
             const notHistory = document.getElementById("historyNotInclude");
             const history = document.getElementById("historyInclude");
+            const rework = document.getElementById("rework");
+            const norework = document.getElementById("norework");
 
             document.getElementById("event_date").value = data.EventDate;
             document.getElementById("event_desc").value = data.Event;
@@ -397,6 +409,12 @@
             if (data.ProjectCode) {
               project_code.value = data.ProjectCode;
               updateProjectName();
+            }
+            if(data.rework === false || data.rework === "False" || data.rework === "false"){
+              norework.checked = true;
+            } else {
+              rework.checked = true;
+              norework.checked = false;
             }
 
             const modalInst = bootstrap.Modal.getInstance(document.getElementById("projectHistoryModal"));

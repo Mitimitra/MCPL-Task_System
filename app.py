@@ -214,6 +214,7 @@ def project_history():
         project_code = request.form.get('project_code', '').strip()
         emp_name = session.get('emp_name')
         workType = request.form.get('work_type', '').strip()
+        rework = request.form.get('IsRework')
         entry_date = request.form.get('entry_date', '').strip()
         event_date = request.form.get('event_date', '').strip()
         event_desc = request.form.get('event_desc', '').strip()
@@ -239,9 +240,10 @@ def project_history():
         eventDescNull = (event_desc == '')
         assignerNull = (tasks_assigned_by == 'Select Assigner Name' or tasks_assigned_by == '')
         isHistoryNull = (isHistory == '' or isHistory == None)
+        isReworkNull = (rework == '' or rework == None)
         
 
-        if workTypenull or projectCodenull or timeSpentNull or projectCodeNull or eventDescNull or assignerNull or isHistoryNull:
+        if workTypenull or projectCodenull or timeSpentNull or projectCodeNull or eventDescNull or assignerNull or isHistoryNull or isReworkNull:
             errormessage = "Please Fill All Details with *"
             return render_template('project_history.html', projects=projects, work_type=work_type, today=today, errormessage=errormessage, empNames=empNames)
         # if workTypenull:
@@ -278,9 +280,10 @@ def project_history():
                         "IsHistory" = %s,
                         "WorkTypeID" = %s,
                         "TimeSpent" = %s,
-                        "AssignedBy" = %s
+                        "AssignedBy" = %s,
+                        "IsRework" = %s
                     WHERE "ProjectHistoryID" = %s
-                ''', (event_date, event_desc, remarks, isHistory, workType, time_spent, tasks_assigned_by, history_id))
+                ''', (event_date, event_desc, remarks, isHistory, workType, time_spent, tasks_assigned_by, rework, history_id))
                 conn.commit()
                 message = "Record Updated Successfully"
             else:
@@ -289,10 +292,10 @@ def project_history():
                     INSERT INTO "ProjectHistory" (
                         "ProjectID", "UserID", "ProjectHistoryGUID", 
                         "DateOfEntry", "EventDate", "Event", "Remarks", 
-                        "IsHistory", "WorkTypeID", "AssignedBy", "ChangeStatus?", "TimeSpent"
+                        "IsHistory", "WorkTypeID", "AssignedBy", "ChangeStatus?", "TimeSpent", "IsRework"
                     )
-                    VALUES (%s, %s, gen_random_uuid(), %s, %s, %s, %s, %s, %s, %s, False, %s)
-                ''', (project_id, user_id, entry_date, event_date, event_desc, remarks, isHistory, workType, tasks_assigned_by, time_spent))
+                    VALUES (%s, %s, gen_random_uuid(), %s, %s, %s, %s, %s, %s, %s, False, %s, %s)
+                ''', (project_id, user_id, entry_date, event_date, event_desc, remarks, isHistory, workType, tasks_assigned_by, time_spent,rework))
                 conn.commit()
                 message = "Record Saved Successfully"
 
@@ -647,7 +650,7 @@ def get_project_history_report():
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT ph."ProjectHistoryID", ph."EventDate", um."EmpName", ph."Event", ph."Remarks", wm."WorkType"
+        SELECT ph."ProjectHistoryID", ph."EventDate", um."EmpName", ph."Event", ph."Remarks", wm."WorkType", ph."IsRework"
         FROM "ProjectHistory" ph
         JOIN "UserMaster" um ON ph."UserID" = um."UserID"
         JOIN "ProjectMaster" pm ON ph."ProjectID" = pm."ProjectID"
@@ -670,6 +673,7 @@ def get_project_history_report():
             "Event": row[3],
             "Remarks": row[4],
             "WorkType": row[5],
+            "IsRework" : row[6]
         }
         for i, row in enumerate(data)
     ]
@@ -701,7 +705,7 @@ def project_hist_report_pdf():
     project_details = project_code + " : " + proj_name
 
     cursor.execute("""
-        SELECT ph."ProjectHistoryID", ph."EventDate", um."EmpName", ph."Event", ph."Remarks", wm."WorkType", pm."ProjectCode", pm."ProjectName", ph."TimeSpent"
+        SELECT ph."ProjectHistoryID", ph."EventDate", um."EmpName", ph."Event", ph."Remarks", wm."WorkType", pm."ProjectCode", pm."ProjectName", ph."TimeSpent", ph."IsRework"
         FROM "ProjectHistory" ph
         JOIN "UserMaster" um ON ph."UserID" = um."UserID"
         JOIN "ProjectMaster" pm ON ph."ProjectID" = pm."ProjectID"
@@ -724,7 +728,8 @@ def project_hist_report_pdf():
             "Event": row[3],
             "Remarks": row[4],
             "WorkType": row[5],
-            "TimeSpent": row[8]
+            "TimeSpent": row[8],
+            "IsRework": row[9]
         } for i, row in enumerate(data)]
     
     rendered = render_template("project_history_report_pdf.html",records=records,project_details=project_details)
@@ -1066,7 +1071,92 @@ def director_meetings():
         meeting_data=meeting_data
     )
 
+@app.route('/view_and_edit_meetings', methods=["GET", "POST"])
+def view_and_edit_meetings():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        if request.method == "GET":
+            meeting_code = request.args.get('meeting_code')
+            if meeting_code:
+                cursor.execute("""
+                    SELECT "MeetingId", "MeetingTitle", "MeetingCode", "MeetingDate", "WeekendDate",
+                           "ParticipantDirectors", "ParticipantStaff", "MOMPoints", "CrucialDecisions", "Remarks",
+                           "IsEdited"
+                    FROM "DirectorMeetingMaster"
+                    WHERE "MeetingCode" = %s
+                """, (meeting_code,))
+                row = cursor.fetchone()
+                if not row:
+                    return jsonify({"status": "error", "message": "Meeting not found"}), 404
 
+                meeting = {
+                    "MeetingID": row[0],
+                    "MeetingTitle": row[1],
+                    "MeetingCode": row[2],
+                    "MeetingDate": row[3].strftime("%Y-%m-%d"),
+                    "WeekendDate": row[4].strftime("%Y-%m-%d"),
+                    "DirectorsPresent": row[5],
+                    "StaffPresent": row[6],
+                    "MOMPoints": row[7],
+                    "CrucialDecisions": row[8],
+                    "Remarks": row[9],
+                    "IsEdited": row[10]
+                }
+                return jsonify({"status": "success", "data": meeting})
+
+            # else: fetch all meetings
+            cursor.execute("""
+                SELECT "MeetingID", "MeetingTitle", "MeetingCode", "MeetingDate", "WeekendDate",
+                       "ParticipantDirectors", "ParticipantStaff", "MOMPoints", "CrucialDecisions", "Remarks",
+                       "IsEdited"
+                FROM "DirectorMeetingMaster"
+                ORDER BY "MeetingDate" DESC
+            """)
+            rows = cursor.fetchall()
+            meetingData = [{
+                "MeetingID": r[0],
+                "MeetingTitle": r[1],
+                "MeetingCode": r[2],
+                "MeetingDate": r[3].strftime("%Y-%m-%d"),
+                "WeekendDate": r[4].strftime("%Y-%m-%d"),
+                "DirectorsPresent": r[5],
+                "StaffPresent": r[6],
+                "MOMPoints": r[7],
+                "CrucialDecisions": r[8],
+                "Remarks": r[9],
+                "IsEdited": r[10]
+            } for r in rows]
+            return jsonify({"status": "success", "data": meetingData})
+
+        elif request.method == "POST":
+            data = request.get_json()
+            meeting_code = data.get('meeting_code')
+            mom_points = data.get('MOMPoints')
+            crucial = data.get('CrucialDecisions')
+            remarks = data.get('Remarks')
+
+            if not meeting_code:
+                return jsonify({"status": "error", "message": "Missing meeting_code"}), 400
+
+            cursor.execute("""
+                UPDATE "DirectorMeetingMaster"
+                SET "MOMPoints" = %s, "CrucialDecisions" = %s, "Remarks" = %s, "IsEdited" = %s
+                WHERE "MeetingCode" = %s AND "IsEdited" = false
+            """, (mom_points, crucial, remarks, True, meeting_code))
+            if cursor.rowcount == 0:
+                return jsonify({"status": "error", "message": "This meeting is already edited. Cannot edit more than once."}), 400
+            conn.commit()
+            return jsonify({"status": "success", "message": "Meeting updated successfully"})
+
+    except Exception as e:
+        import traceback
+        print("🔥 ERROR in /view_and_edit_meetings:", traceback.format_exc())
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+    finally:
+        cursor.close()
+        conn.close()
 
 
 

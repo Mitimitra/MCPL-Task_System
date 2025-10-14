@@ -150,6 +150,7 @@
                 <th scope="col">Filled By</th>
                 <th scope="col">Work Type</th>
                 <th scope="col">Event Desc.</th>
+                <th scope="col">IsRework</th>
                 <th scope="col">Remarks</th>
             </thead>
             <tbody id="reportTableBody"></tbody>
@@ -190,6 +191,7 @@ document.getElementById("viewReportListings").addEventListener("click", function
                         <td>${item.EmpName}</td>
                         <td>${item.WorkType}</td>
                         <td style="white-space: pre-line;">${item.Event}</td>
+                        <td>${item.IsRework}</td>
                         <td style="white-space: pre-line;">${item.Remarks}</td>
                     </tr>`;
                 tableBody.innerHTML += row;

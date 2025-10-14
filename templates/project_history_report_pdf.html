@@ -82,6 +82,7 @@
           <th style="width: 5%;">Event Date</th>
           <th style="width: 5%;">Filled By</th>
           <th style="width: 40%;">Work Type and Event Desc</th>
+          <th style="width: 5%;">IsRework</th>
           <th style="width: 4%;">Time Spent</th>
           <th style="width: 10%;">Remarks</th>
         </tr>
@@ -93,6 +94,7 @@
           <td>{{ r.EventDate }}</td>
           <td>{{ r.EmpName }}</td>
           <td><b>Work Type: </b> {{ r.WorkType }}<br /><b>Event Description: </b>{{ r.Event }}</td>
+          <td>{{ r.IsRework }}</td>
           <td>{{ r.TimeSpent }}</td>
           <td>{{ r.Remarks }}</td>
         </tr>

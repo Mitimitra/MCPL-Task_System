@@ -219,11 +219,50 @@
         <textarea name="remarks" id="remarks" class="form-control" rows="5"></textarea>
       </div>
 
-      <div class="col-md-4" style="display: flex; justify-content: center; align-items: center; margin-top: 0.5re;">
+      <div class="col-md-4" style="display: flex; justify-content: center; align-items: center; margin-top: 0.5rem;">
         <button type="submit" id="saveMOMBtn" class="btn btn-outline-success w-50">Save MOM Details</button>
+        <button type="button" class="btn btn-outline-primary" style="margin-left: 1rem;">View Listings</button>
       </div>
     </div>
   </form>
+</div>
+
+<!-- View Listings Modal -->
+<div class="modal fade" id="viewMeetingsModal" tabindex="-1" aria-labelledby="viewMeetingsModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="viewMeetingsModalLabel">Director Meetings - MOM Listings</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Accordion for meetings -->
+        <div class="accordion" id="meetingsAccordion">
+          {% for meet in meeting_data %}
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="heading{{ meet.sr }}">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                      data-bs-target="#collapse{{ meet.sr }}" aria-expanded="false" 
+                      aria-controls="collapse{{ meet.sr }}">
+                {{ meet.sr }}. {{ meet.title }}
+              </button>
+            </h2>
+            <div id="collapse{{ meet.sr }}" class="accordion-collapse collapse" aria-labelledby="heading{{ meet.sr }}" data-bs-parent="#meetingsAccordion">
+              <div class="accordion-body">
+                <div id="meetingDetails{{ meet.code }}" class="meeting-details" data-meeting-code="{{ meet.code }}">
+                  <div class="spinner-border text-secondary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- JavaScript to Handle Movement and Form Submission -->
@@ -354,6 +393,269 @@ document.addEventListener('DOMContentLoaded', function () {
       toastElement.remove();
     });
   }
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+
+  // Existing JS remains intact ...
+
+  // Handle View Listings button click
+  document.querySelector('button.btn-outline-primary').addEventListener('click', function() {
+    const modal = new bootstrap.Modal(document.getElementById('viewMeetingsModal'));
+    modal.show();
+
+    document.querySelectorAll('.meeting-details').forEach(div => {
+  const code = div.getAttribute('data-meeting-code');
+
+  fetch(`/view_and_edit_meetings?meeting_code=${code}`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.status === "success") {
+        const m = data.data;
+
+        // Add IsEdited flag to track editing
+        const isAlreadyEdited = m.IsEdited || false;
+
+        div.innerHTML = `
+          <p><strong>Date:</strong> ${m.MeetingDate}</p>
+          <p><strong>Directors Present:</strong> ${m.DirectorsPresent.map(d => d.name).join(', ')}</p>
+          <p><strong>Staff Present:</strong> ${m.StaffPresent.map(s => s.name).join(', ')}</p>
+          <p><strong>MOM Points Discussed:</strong> 
+            <textarea id="mompoints" class="form-control" style="overflow:hidden; resize:none;" disabled>${m.MOMPoints || ''}</textarea>
+          </p>
+          <p><strong>Crucial Decisions Discussed:</strong> 
+            <textarea id="crucialPoints" class="form-control" style="overflow:hidden; resize:none;" disabled>${m.CrucialDecisions || ''}</textarea>
+          </p>
+          <p><strong>Remarks:</strong> 
+            <textarea id="remarksPoints" class="form-control" style="overflow:hidden; resize:none;" disabled>${m.Remarks || ''}</textarea>
+          </p>
+          <button id="saveMeetingBtn" class="btn btn-success mt-3">
+            Edit
+          </button>
+        `;
+
+        const momTextarea = div.querySelector('#mompoints');
+        const crucialTextarea = div.querySelector('#crucialPoints');
+        const remarksTextarea = div.querySelector('#remarksPoints');
+        const saveBtn = div.querySelector('#saveMeetingBtn');
+
+        // Auto-adjust textarea height
+        [momTextarea, crucialTextarea, remarksTextarea].forEach(t => {
+          t.style.height = t.scrollHeight + 'px';
+          t.addEventListener('input', () => {
+            t.style.height = 'auto';
+            t.style.height = t.scrollHeight + 'px';
+          });
+        });
+
+        let isEditMode = false;
+
+        saveBtn.addEventListener('click', () => {
+          if (isAlreadyEdited) {
+            showToast('Error', 'This meeting is already edited. Cannot edit more than once.', 'danger');
+            return;
+          }
+
+          if (!isEditMode) {
+            // Enable editing
+            momTextarea.disabled = false;
+            crucialTextarea.disabled = false;
+            remarksTextarea.disabled = false;
+            saveBtn.textContent = "Save";
+            saveBtn.classList.remove('btn-success');
+            saveBtn.classList.add('btn-primary');
+            isEditMode = true;
+          } else {
+            // Save updated data
+            const payload = {
+              meeting_code: code,
+              MOMPoints: momTextarea.value,
+              CrucialDecisions: crucialTextarea.value,
+              Remarks: remarksTextarea.value
+            };
+
+            fetch('/view_and_edit_meetings', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(resp => {
+              if (resp.status === "success") {
+                momTextarea.disabled = true;
+                crucialTextarea.disabled = true;
+                remarksTextarea.disabled = true;
+                showToast('Success', 'Meeting updated successfully!', 'success');
+              } else {
+                showToast('Error', resp.message || 'Failed to update meeting', 'danger');
+              }
+            })
+            .catch(() => showToast('Error', 'Error updating meeting', 'danger'));
+          }
+        });
+
+      } else {
+        div.innerHTML = `<div class="text-danger">Error loading meeting.</div>`;
+      }
+    })
+    .catch(() => {
+      div.innerHTML = `<div class="text-danger">Failed to load meeting.</div>`;
+    });
+
+  // Toast function
+  function showToast(header, body, type = 'info') {
+    const toastContainer = document.getElementById('toastContainer');
+    const toastId = 'toast' + Date.now();
+
+    const toastHTML = `
+      <div id="${toastId}" class="toast align-items-center text-bg-${type} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+          <div class="toast-body">
+            <strong>${header}</strong><br>${body}
+          </div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+      </div>
+    `;
+
+    toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+
+    const toastElement = document.getElementById(toastId);
+    const bsToast = new bootstrap.Toast(toastElement, { delay: 4000 });
+    bsToast.show();
+
+    toastElement.addEventListener('hidden.bs.toast', () => {
+      toastElement.remove();
+    });
+  }
+});
+
+
+
+  });
+
+  
+
+  // Global variable to track edit mode
+  //let currentEditCode = null;
+
+  // Edit Meeting
+  //window.editMeeting = function(code) {
+  //  fetch(`/director_meetings?meeting_code=${code}`)
+  //    .then(res => res.json())
+  //    .then(data => {
+  //      if (data.status === "success") {
+  //        const m = data.data;
+//
+  //        // Fill form data
+  //        document.getElementById('meeting_date').value = m.MeetingDate;
+  //        document.getElementById('mom_points').value = m.MOMPoints;
+  //        document.getElementById('remarks').value = m.Remarks;
+  //        document.querySelector('textarea[name="crucial_points"]').value = m.CrucialDecisions;
+//
+  //        // Clear selections
+  //        clearSelectedLists();
+//
+  //        // Fill selected directors
+  //        const availableDirectors = document.getElementById('available');
+  //        const selectedDirectors = document.getElementById('selected');
+  //        m.ParticipantDirectors.forEach(d => {
+  //          const opt = Array.from(availableDirectors.options).find(o => o.value == d.id);
+  //          if (opt) selectedDirectors.appendChild(opt);
+  //        });
+//
+  //        // Fill selected staff
+  //        const availableStaff = document.getElementById('staffAvailable');
+  //        const selectedStaff = document.getElementById('staffSelected');
+  //        m.ParticipantStaff.forEach(s => {
+  //          const opt = Array.from(availableStaff.options).find(o => o.value == s.id);
+  //          if (opt) selectedStaff.appendChild(opt);
+  //        });
+//
+  //        // Add hidden fields for edit mode
+  //        let hiddenEdit = document.getElementById('edit_mode');
+  //        if (!hiddenEdit) {
+  //          hiddenEdit = document.createElement('input');
+  //          hiddenEdit.type = 'hidden';
+  //          hiddenEdit.name = 'edit_mode';
+  //          hiddenEdit.id = 'edit_mode';
+  //          document.getElementById('momForm').appendChild(hiddenEdit);
+  //        }
+  //        hiddenEdit.value = 'true';
+//
+  //        let hiddenCode = document.getElementById('meeting_code');
+  //        if (!hiddenCode) {
+  //          hiddenCode = document.createElement('input');
+  //          hiddenCode.type = 'hidden';
+  //          hiddenCode.name = 'meeting_code';
+  //          hiddenCode.id = 'meeting_code';
+  //          document.getElementById('momForm').appendChild(hiddenCode);
+  //        }
+  //        hiddenCode.value = code;
+//
+  //        // Change button text
+  //        const btn = document.getElementById('saveMOMBtn');
+  //        btn.textContent = "Update MOM Details";
+//
+  //        // Hide modal
+  //        const modal = bootstrap.Modal.getInstance(document.getElementById('viewMeetingsModal'));
+  //        modal.hide();
+//
+  //        currentEditCode = code;
+  //      } else {
+  //        alert("Failed to load meeting details for editing.");
+  //      }
+  //    });
+  //};
+
+  // Modify form submission (keep existing)
+  //const momForm = document.getElementById('momForm');
+  //momForm.addEventListener('submit', function(e) {
+  //  e.preventDefault();
+//
+  //  // Build selected arrays
+  //  const selectedDirectors = Array.from(document.getElementById('selected').options).map(opt => ({
+  //    id: opt.value,
+  //    name: opt.getAttribute('data-name')
+  //  }));
+//
+  //  const selectedStaff = Array.from(document.getElementById('staffSelected').options).map(opt => ({
+  //    id: opt.value,
+  //    name: opt.getAttribute('data-name')
+  //  }));
+//
+  //  document.getElementById('directors_selected').value = JSON.stringify(selectedDirectors);
+  //  document.getElementById('staff_selected').value = JSON.stringify(selectedStaff);
+//
+  //  const formData = new FormData(momForm);
+//
+  //  fetch(momForm.action || window.location.pathname, {
+  //    method: 'POST',
+  //    body: formData
+  //  })
+  //  .then(res => res.json())
+  //  .then(data => {
+  //    if (data.status === "success") {
+  //      showToast(data.toast.header, data.toast.body);
+//
+  //      // Reset form & button if it was update
+  //      if (document.getElementById('edit_mode') && document.getElementById('edit_mode').value === 'true') {
+  //        document.getElementById('edit_mode').remove();
+  //        document.getElementById('meeting_code').remove();
+  //        document.getElementById('saveMOMBtn').textContent = "Save MOM Details";
+  //      }
+//
+  //      momForm.reset();
+  //      clearSelectedLists();
+  //    } else {
+  //      alert(data.message || "Something went wrong.");
+  //    }
+  //  })
+  //  .catch(() => {
+  //    alert("Failed to save MOM details.");
+  //  });
+  //});
+
 });
 </script>
 
