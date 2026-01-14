@@ -733,7 +733,7 @@ def project_hist_report_pdf():
         } for i, row in enumerate(data)]
     
     cursor.execute("""
-                    SELECT DISTINCT um."EmpName", SUM(ph."TimeSpent") FROM "ProjectHistory" ph
+                    SELECT DISTINCT um."EmpName", CAST(SUM(ph."TimeSpent") AS NUMERIC(10,2)) FROM "ProjectHistory" ph
                     JOIN "UserMaster" um ON ph."UserID" = um."UserID"
                     JOIN "ProjectMaster" pm ON ph."ProjectID" = pm."ProjectID"
                     WHERE pm."ProjectCode" = %s GROUP BY um."EmpName" ORDER BY SUM(ph."TimeSpent") DESC;
@@ -814,7 +814,7 @@ def tasks_performed_pdf_report():
     date_to_title = date_to_obj.strftime("%d-%m-%Y")
     
     cursor.execute("""
-                    SELECT DISTINCT pm."ProjectCode", pm."ProjectName", SUM(ph."TimeSpent") FROM "ProjectHistory" ph
+                    SELECT DISTINCT pm."ProjectCode", pm."ProjectName", CAST(SUM(ph."TimeSpent") AS NUMERIC(10,2)) FROM "ProjectHistory" ph
                     JOIN "UserMaster" um ON ph."UserID" = um."UserID"
                     JOIN "ProjectMaster" pm ON ph."ProjectID" = pm."ProjectID"
                     WHERE um."EmpName" = %s GROUP BY pm."ProjectCode", pm."ProjectName" ORDER BY pm."ProjectCode" ASC;
