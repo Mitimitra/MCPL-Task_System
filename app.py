@@ -72,13 +72,13 @@ def dashboard():
         
         # tasks_assigned = [{"SrNo" : row[0], "task_description" : row[1] , "assigned_by" : row[2], "project_details" : row[3]+" : "+row[4], "remarks": row[5], "deadline": row[6], "status" : row[7]}for row in cursor.fetchall()]
         
-        cursor.execute(""" SELECT ph."ProjectHistoryID" , ph."Event", um."EmpName", pm."ProjectCode", pm."ProjectName", ph."Remarks", ph."TargetDate", ph."DateOfEntry"
+        cursor.execute(""" SELECT ph."ProjectHistoryID" , ph."Event", um."EmpName", pm."ProjectCode", pm."ProjectName", ph."Remarks", ph."TargetDate", ph."DateOfEntry", ph."TaskStatus"
                        FROM "ProjectHistory" ph
                        JOIN "UserMaster" um ON ph."AssignedBy" = um."UserID"
                        JOIN "ProjectMaster" pm ON ph."ProjectID" = pm."ProjectID"
                        WHERE ph."ChangeStatus?" = true AND ph."UserID" = %s ORDER BY ph."ProjectHistoryID" ASC """,(user_id,))
         
-        assigned_tasks = [{"SrNo" : row[0], "task_description" : row[1] , "assigned_to" : row[2], "project_details" : row[3]+" : "+row[4], "remarks": row[5],"target_date":row[6], "date_of_entry" : row[7]}for row in cursor.fetchall()]
+        assigned_tasks = [{"SrNo" : row[0], "task_description" : row[1] , "assigned_to" : row[2], "project_details" : row[3]+" : "+row[4], "remarks": row[5],"target_date":row[6], "date_of_entry" : row[7], "status": row[8]}for row in cursor.fetchall()]
         
         print("Tasks Assigned to: ",assigned_tasks)
         
@@ -383,9 +383,9 @@ def update_assigned_tasks():
         task_desc = task[0]
         remarks = task[1]
 
-        task_desc = task_desc + '(Updated On '+date.today()+ ') : '+data['task_desc']
+        task_desc = task_desc + '| ('+session['username']+' Updated On '+str(date.today())+ ') : '+data['task_desc']
         if data['remarks'] or data['remarks'] != "":
-            remarks = remarks + '(Updated On '+date.today()+ ') : '+data['remarks']
+            remarks = remarks + '| ('+session['username']+' Updated On '+str(date.today())+ ') : '+data['remarks']
         # remarks = remarks + '(Edited) : '+data['remarks']
         
         # cursor.execute('''
@@ -525,7 +525,7 @@ def tasks_assigned():
         cursor.execute(' SELECT "UserEmail","EmpName" FROM "UserMaster" WHERE "UserID" = %s ',(data['assign_to'],))
         assign_to_email = cursor.fetchone()
         
-        task_desc = "Task Assigned: "+ data['task_desc'] + ". Deadline: "+data['target_date']+". Current Status: Pending"
+        task_desc = "Task Assigned: "+ data['task_desc'] + ". | "+"\n"+"Deadline: "+data['target_date']+". | "+"\n"+"Current Status: Pending"
         
         print(project_id)
         
@@ -570,7 +570,7 @@ def tasks_performed_report():
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    cursor.execute('SELECT "UserID", "EmpName" FROM "UserMaster" ORDER BY "EmpName" DESC')
+    cursor.execute('SELECT "UserID", "EmpName" FROM "UserMaster" ORDER BY "EmpName" ASC')
     emp_details = [{"id": row[0], "name": row[1]} for row in cursor.fetchall()]
     
     print(emp_details)

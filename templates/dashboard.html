@@ -195,7 +195,7 @@ function applyReviewFilters() {
                     <td style="width: 35%;" ><textarea type="text" id="task_description_{{ task.SrNo }}" class="form-control" readonly disabled>{{ task.task_description }}</textarea></td>
                     <td style="width: 10%;">{{task.target_date}}</td>
                     <td style="width: 10%;" ><input type="text" class="form-control" value="{{ task.remarks }}" disabled id="remarks_{{ task.SrNo }}"></td>
-                    <td style="width: 15%;">
+                    <td style="width: 20%;">
                         <select name="task_status" id="status_{{ task.SrNo }}" class="form-select">
                             <option value="Cleared" {% if task.status == "Cleared" %} selected {% endif %} disabled id="Cleared">Cleared</option>
                             <option value="Pending" {% if task.status == "Pending" %} selected {% endif %}disabled id="Pending">Pending</option>
@@ -259,6 +259,7 @@ function applyReviewFilters() {
       <th>Assigned By</th>
       <th>Project Details</th>
       <th>Task Description</th>
+      <th>Assigned Date</th>
       <th>Deadline</th>
       <th>Remarks</th>
       <th>Status</th>
@@ -269,12 +270,13 @@ function applyReviewFilters() {
     {% for task in assigned_tasks %}
     <tr>
       <td>{{ task.SrNo }}</td>
-      <td>{{ task.assigned_to }}</td>
+      <td style="width: 10%;">{{ task.assigned_to }}</td>
       <td style="width: 20%;">{{ task.project_details }}</td>
-      <td style="width: 20%;"><textarea class="form-control" disabled id="task_description_{{ task.SrNo }}">{{task.task_description}}</textarea></td>
-      <td style="width: 15%;">{{task.target_date}}</td>
-      <td style="width: 15%;"><input type="text" class="form-control" value="{{ task.remarks }}" disabled id="remarks_{{ task.SrNo }}"></td>
-      <td style="width: 20%;">
+      <td style="width: 25%;"><textarea class="form-control" disabled id="task_description_{{ task.SrNo }}">{{task.task_description}}</textarea></td>
+      <td style="width: 10%;">{{task.date_of_entry}}</td>
+      <td style="width: 10%;">{{task.target_date}}</td>
+      <td style="width: 10%;"><textarea class="form-control" disabled id="remarks_{{ task.SrNo }}">{{task.remarks}}</textarea></td>
+      <td style="width: 10%;">
         <select name="task_status" id="status_{{ task.SrNo }}" class="form-select" disabled>
           <option value="Cleared" {% if task.status == "Cleared" %}selected{% endif %}>Cleared</option>
           <option value="Reloaded" {% if task.status == "Reloaded" %}selected{% endif %}>Reloaded</option>
@@ -741,8 +743,20 @@ function openTaskModal(taskId) {
     const taskDescElement = document.getElementById("task_description_" + taskId);
     const remarksElement = document.getElementById("remarks_" + taskId);
 
-    document.getElementById("taskModalLabel1").innerHTML = "Task Update History: <br />" + (taskDescElement ? (taskDescElement.value + '<br/>' || taskDescElement.innerText + '<br />') : '');
-    document.getElementById("taskModalLabel2").innerHTML = "Remarks Updates: <br />" + (remarksElement ? (remarksElement.value + '<br />' || remarksElement.innerText + '<br />') : '');
+    const modalTaskHistory = taskDescElement.value.split('|') || taskDescElement.innerText.split('|');
+    const remarksHistory = remarksElement.value.split('|') || remarksElement.innerText.split('|');
+
+    console.log(modalTaskHistory)
+
+    let taskModalLabel = "Task Update History: <br />";
+    let remarksModalLabel = "Remarks Update History: <br />";
+
+    modalTaskHistory.forEach((elem,index) => taskModalLabel += elem+"<br />");
+    remarksHistory.forEach((elem,index) => remarksModalLabel += elem+"<br />");
+
+
+    document.getElementById("taskModalLabel1").innerHTML = taskModalLabel;
+    document.getElementById("taskModalLabel2").innerHTML = remarksModalLabel;
 
     // Show the modal
     const myModal = new bootstrap.Modal(document.getElementById('taskUpdateModal'));
