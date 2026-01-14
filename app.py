@@ -736,12 +736,16 @@ def project_hist_report_pdf():
                     SELECT DISTINCT um."EmpName", CAST(SUM(ph."TimeSpent") AS NUMERIC(10,2)) FROM "ProjectHistory" ph
                     JOIN "UserMaster" um ON ph."UserID" = um."UserID"
                     JOIN "ProjectMaster" pm ON ph."ProjectID" = pm."ProjectID"
-                    WHERE pm."ProjectCode" = %s GROUP BY um."EmpName" ORDER BY SUM(ph."TimeSpent") DESC;
+                    WHERE pm."ProjectCode" = %s GROUP BY um."EmpName" ORDER BY CAST(SUM(ph."TimeSpent") AS NUMERIC(10,2)) DESC;
                     """,[project_code])
     
     project_abstract_details = [{"SrNo" : i, "name": row[0], "time_spent": row[1]}for i,row in enumerate(cursor.fetchall(), start=1)]
     
-    rendered = render_template("project_history_report_pdf.html",records=records,project_details=project_details,project_abstract_details=project_abstract_details)
+    total_time_spent = 0
+    for proj in project_abstract_details:
+        total_time_spent += float(proj["time_spent"])
+    
+    rendered = render_template("project_history_report_pdf.html",records=records,project_details=project_details,project_abstract_details=project_abstract_details,total_time_spent=total_time_spent)
 
     # Update this path to your local wkhtmltopdf
     # config = pdfkit.configuration(wkhtmltopdf=r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe")
@@ -817,12 +821,16 @@ def tasks_performed_pdf_report():
                     SELECT DISTINCT pm."ProjectCode", pm."ProjectName", CAST(SUM(ph."TimeSpent") AS NUMERIC(10,2)) FROM "ProjectHistory" ph
                     JOIN "UserMaster" um ON ph."UserID" = um."UserID"
                     JOIN "ProjectMaster" pm ON ph."ProjectID" = pm."ProjectID"
-                    WHERE um."EmpName" = %s GROUP BY pm."ProjectCode", pm."ProjectName" ORDER BY pm."ProjectCode" ASC;
+                    WHERE um."EmpName" = %s GROUP BY pm."ProjectCode", pm."ProjectName" ORDER BY CAST(SUM(ph."TimeSpent") AS NUMERIC(10,2)) DESC;
                    """,[empName])
     
     emp_abstract = [{"srno" : i, "project_code": row[0], "project_name": row[1], "time_spent": row[2]}for i,row in enumerate(cursor.fetchall(),start=1)]
     
-    rendered = render_template("tasks_performed_report_pdf.html",records=records,empName=emp_name,date_from=date_from_title,date_to=date_to_title,emp_abstract=emp_abstract)
+    total_time_spent = 0
+    for emp in emp_abstract:
+        total_time_spent += float(emp["time_spent"])
+    
+    rendered = render_template("tasks_performed_report_pdf.html",records=records,empName=emp_name,date_from=date_from_title,date_to=date_to_title,emp_abstract=emp_abstract,total_time_spent=total_time_spent)
 
     # Update this path to your local wkhtmltopdf
     # config = pdfkit.configuration(wkhtmltopdf=r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe")
