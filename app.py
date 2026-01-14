@@ -732,7 +732,16 @@ def project_hist_report_pdf():
             "IsRework": row[9]
         } for i, row in enumerate(data)]
     
-    rendered = render_template("project_history_report_pdf.html",records=records,project_details=project_details)
+    cursor.execute("""
+                    SELECT DISTINCT um."EmpName", SUM(ph."TimeSpent") FROM "ProjectHistory" ph
+                    JOIN "UserMaster" um ON ph."UserID" = um."UserID"
+                    JOIN "ProjectMaster" pm ON ph."ProjectID" = pm."ProjectID"
+                    WHERE pm."ProjectCode" = %s GROUP BY um."EmpName" ORDER BY SUM(ph."TimeSpent") DESC;
+                    """,[project_code])
+    
+    project_abstract_details = [{"SrNo" : i, "name": row[0], "time_spent": row[1]}for i,row in enumerate(cursor.fetchall(), start=1)]
+    
+    rendered = render_template("project_history_report_pdf.html",records=records,project_details=project_details,project_abstract_details=project_abstract_details)
 
     # Update this path to your local wkhtmltopdf
     # config = pdfkit.configuration(wkhtmltopdf=r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe")
@@ -804,7 +813,16 @@ def tasks_performed_pdf_report():
     date_from_title = date_from_obj.strftime("%d-%m-%Y")
     date_to_title = date_to_obj.strftime("%d-%m-%Y")
     
-    rendered = render_template("tasks_performed_report_pdf.html",records=records,empName=emp_name,date_from=date_from_title,date_to=date_to_title)
+    cursor.execute("""
+                    SELECT DISTINCT pm."ProjectCode", pm."ProjectName", SUM(ph."TimeSpent") FROM "ProjectHistory" ph
+                    JOIN "UserMaster" um ON ph."UserID" = um."UserID"
+                    JOIN "ProjectMaster" pm ON ph."ProjectID" = pm."ProjectID"
+                    WHERE um."EmpName" = %s GROUP BY pm."ProjectCode", pm."ProjectName" ORDER BY pm."ProjectCode" ASC;
+                   """,[empName])
+    
+    emp_abstract = [{"srno" : i, "project_code": row[0], "project_name": row[1], "time_spent": row[2]}for i,row in enumerate(cursor.fetchall(),start=1)]
+    
+    rendered = render_template("tasks_performed_report_pdf.html",records=records,empName=emp_name,date_from=date_from_title,date_to=date_to_title,emp_abstract=emp_abstract)
 
     # Update this path to your local wkhtmltopdf
     # config = pdfkit.configuration(wkhtmltopdf=r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe")

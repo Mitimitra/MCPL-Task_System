@@ -101,5 +101,22 @@
         {% endfor %}
       </tbody>
     </table>
+    <h3 style="font-weight: 500; margin-top: 1rem;">Project Wise Employee Abstract</h3>
+        <table class="report-table" style="width: 50%; align-items: center; text-align: justify; margin: 0 auto; ">
+            <thead>
+                <th>Sr.No</th>
+                <th>Employee Name</th>
+                <th>Time Spent</th>
+            </thead>
+            <tbody>
+                {% for abstract in project_abstract_details %}
+                <tr>
+                    <td style="width: fit-content;">{{abstract.SrNo}}</td>
+                    <td>{{abstract.name}}</td>
+                    <td>{{abstract.time_spent}}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
 </body>
 </html>
