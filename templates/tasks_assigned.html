@@ -113,6 +113,18 @@
     <div class="main" style="margin: 5rem; display: flex;">
         <div class="task-assigned-form" style="width: 100%;">
             <h3>Tasks Assigned Details</h3>
+            {% if errormessage %}
+
+                <div class="position-fixed top-0 end-0 p-3" style="z-index: 1100;">
+                    <div id="errorToast" class="toast align-items-center text-bg-danger border-0" role="alert"
+                        aria-live="assertive" aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body" id="errorToastMessage">{{ errormessage }}</div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                    </div>
+                </div>
+            {% endif %}
     <form method="post">
         {% if projects %}
 
@@ -122,10 +134,10 @@
                 <label for="entry_date" class="form-label">Select Date of Entry</label>
             </div>
             <div class="col-md-3">
-                <label for="event_date" class="form-label">Assigning to?</label>
+                <label for="event_date" class="form-label">Assigning to? <strong>*</strong></label>
             </div>
             <div class="col-md-3">
-                <label for="project_code" class="form-label">Select Project Code</label>
+                <label for="project_code" class="form-label">Select Project Code <strong>*</strong></label>
             </div>
         </div>
 
@@ -138,15 +150,15 @@
             {% endif %}
             <div class="me-3" style="width: 20%;">
                 <select class="form-select" id="assign_to" name="assign_to">
-                    <option selected>Select Assigning to Employee</option>
+                    <option>Select Assigning to Employee <strong>*</strong></option>
                     {% for e in empNames %}
                     <option value="{{e.id}}">{{ e.name }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div style="width: 20%;">
-                <select class="form-select project_code" id="project_code" onchange="updateProjectName()" name="project_code" required>
-                    <option selected>Select Project Code</option>
+                <select class="form-select project_code" id="project_code" onchange="updateProjectName()" name="project_code">
+                    <option>Select Project Code <strong>*</strong></option>
                     {% for p in projects %}
                         <option value="{{ p.code }}">{{ p.code }}</option>
                     {% endfor %}
@@ -160,7 +172,7 @@
             <textarea class="form-control" id="project_name" name="project_name" placeholder="Project Name" readonly></textarea>
         </div>
         <div class="mb-3" style="width: 62.4%;">
-            <label for="project_name" class="form-label">Task Description</label>
+            <label for="project_name" class="form-label">Task Description <strong>*</strong></label>
             <textarea class="form-control task_desc" name="task_desc" id="task_desc" placeholder="Enter Task Description"></textarea>
         </div>
         <!-- <div class="mb-3" style="width: 30%;">
@@ -168,11 +180,11 @@
             <input type="text" name="task_status" id="task_status" value="Pending" class="form-control" style="width: 30%;" readonly disabled>
         </div> -->
         <div class="mb-3" style="width: 30%;">
-            <label for="project_name" class="form-label">Assigned By</label>
+            <label for="project_name" class="form-label">Assigned By <strong>*</strong></label>
             <input type="text" class="form-control" id="assigned_by" name="assigned_by" value="{{session['emp_name']}}" readonly>
-            <label for="work_type" style="margin-top: 1rem;">Select Work Type</label>
+            <label for="work_type" style="margin-top: 1rem;">Select Work Type <strong>*</strong></label>
             <select name="work_type" id="work_type" class="form-select">
-                <option selected>Select Work Type</option>
+                <option>Select Work Type</option>
                 {% for type in work_type %}
                 <option value="{{type.id}}">{{type.type}}</option>
                 {% endfor %}
@@ -188,11 +200,11 @@
         <button id="submitBtn" type="submit" class="btn btn-outline-success">Save Details</button>
         <button id="viewListings" type="button" class="btn btn-outline-primary">View Listings</button>
 
-        {% if errormessage %}
+        <!-- {% if errormessage %}
         <div class="alert alert-danger" role="alert" style="width: 40%;">
             {{errormessage}}
         </div>
-        {% endif %}
+        {% endif %} -->
 
         {% endif %}
         {% if message %}
@@ -216,5 +228,17 @@
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q" crossorigin="anonymous"></script>
-    </body>
+    
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+        const toastEl = document.getElementById("errorToast");
+        if (toastEl) {
+            const toast = new bootstrap.Toast(toastEl, {
+            delay: 5000   // auto hide after 5 sec
+            });
+            toast.show();
+        }
+        });
+    </script>
+</body>
 </html>

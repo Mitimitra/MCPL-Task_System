@@ -506,6 +506,23 @@ def logout():
     session.clear()
     return redirect("/login")
 
+@app.route("/mark_employee_inactive", methods=["POST"])
+def mark_employee_inactive():
+    data = request.json
+    print("Inactive Data: ",data)
+    
+    employees = data.get('employees',[])
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    for name in employees:
+        cursor.execute(""" UPDATE "UserMaster" SET "IsActive" = false WHERE "EmpName" = %s """,[name,])
+        
+    conn.commit()
+    
+    return jsonify({"message": "Setting Inactive Success", "statusCode" : 200})
+
 @app.route("/tasks_assigned", methods=["GET","POST"])
 def tasks_assigned():
     
@@ -528,14 +545,32 @@ def tasks_assigned():
         
         print(data)
         
+        workType = data.get('work_type')
+        project_code = data.get('project_code')
+        assign_to = data.get('assign_to')
+        projectName = data.get('project_name')
+        task_desc = data.get('task_desc')
+        
+        
+        workTypenull = (workType == 'Select Work Type' or workType == '')
+        projectCodenull = (project_code == 'Select Project Code' or project_code == '')
+        eventDescNull = (task_desc == '')
+        projectNameNull = (projectName == '')
+        assignToNull = (assign_to == '' or assign_to == 'Select Assigning to Employee')
+        
+        
+        if workTypenull or projectCodenull or assignToNull or projectNameNull or eventDescNull or assignToNull:
+            errormessage = "Please Fill All Details with *"
+            return render_template('tasks_assigned.html', projects=projects, work_type=work_type, today=today, errormessage=errormessage, empNames=empNames)
+        
         cursor.execute(' SELECT "ProjectID" FROM "ProjectMaster" WHERE "ProjectCode" = %s ',(data["project_code"],))
         project_id = cursor.fetchone()
         
         cursor.execute(' SELECT "UserID" FROM "UserMaster" WHERE "EmpName"= %s ',(data["assigned_by"],))
         user_assigned_by = cursor.fetchone()
         
-        cursor.execute(' SELECT "UserEmail","EmpName" FROM "UserMaster" WHERE "UserID" = %s ',(data['assign_to'],))
-        assign_to_email = cursor.fetchone()
+        # cursor.execute(' SELECT "UserEmail","EmpName" FROM "UserMaster" WHERE "UserID" = %s ',(data['assign_to'],))
+        # assign_to_email = cursor.fetchone()
         
         task_desc = "Task Assigned: "+ data['task_desc'] + ". | "+"\n"+"Deadline: "+data['target_date']+". | "+"\n"+"Current Status: Pending"
         
@@ -842,7 +877,10 @@ def tasks_performed_pdf_report():
     
     total_time_spent = 0
     for emp in emp_abstract:
-        total_time_spent += float(emp["time_spent"])
+        if emp["time_spent"] == None:
+            emp["time_spent"] = 1.0
+        else:
+            total_time_spent += float(emp["time_spent"])
     
     rendered = render_template("tasks_performed_report_pdf.html",records=records,empName=emp_name,date_from=date_from_title,date_to=date_to_title,emp_abstract=emp_abstract,total_time_spent=total_time_spent)
 

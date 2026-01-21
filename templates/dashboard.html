@@ -104,7 +104,9 @@ function applyReviewFilters() {
                   <a href="{{ url_for("director_meetings") }}" class="nav-link">Director Meetings</a>
                 </li>
                 {% endif %}
+                {% if session['user_category'] == 'SuperAdmin' %}
                 <li class="nav-item"><a href="" class="nav-link" data-bs-toggle="modal" data-bs-target="#employeeListModal">Employee List</a></li>
+                {% endif %}
             </ul>
 
             <ul class="navbar-nav">
@@ -759,19 +761,25 @@ function toggleEdit(button) {
 
         <table class="table table-bordered table-striped table-hover align-middle" id="employeeTable">
           <thead class="table-dark">
-            <tr>
-              <th onclick="sortEmployeeTable(0)">Sr.No ⬍</th>
-              <th onclick="sortEmployeeTable(1)">Name ⬍</th>
-              <th onclick="sortEmployeeTable(2)">Date Of Joining ⬍</th>
-              <th onclick="sortEmployeeTable(3)">Date of Birth ⬍</th>
-              <th onclick="sortEmployeeTable(4)">Age ⬍</th>
-              <th onclick="sortEmployeeTable(5)">Email Address ⬍</th>
+            <tr id="headRow">
+              <th id="selectAllTh" style="display:none;">
+                <input type="checkbox" onclick="toggleAll(this)">
+              </th>
+              <th onclick="sortEmployeeTable(this)">Sr.No ⬍</th>
+              <th onclick="sortEmployeeTable(this)">Name ⬍</th>
+              <th onclick="sortEmployeeTable(this)">Date Of Joining ⬍</th>
+              <th onclick="sortEmployeeTable(this)">Date of Birth ⬍</th>
+              <th onclick="sortEmployeeTable(this)">Age ⬍</th>
+              <th onclick="sortEmployeeTable(this)">Email Address ⬍</th>
             </tr>
           </thead>
 
           <tbody>
             {% for emp in employee_list %}
             <tr>
+              <td class="selectTd" style="display:none;">
+                <input type="checkbox" class="empCheckbox" value="{{ emp.name }}">
+              </td>
               <td>{{ emp.SrNo }}</td>
               <td>{{ emp.name }}</td>
               <td>{{ emp.doj }}</td>
@@ -786,6 +794,15 @@ function toggleEdit(button) {
       </div>
 
       <div class="modal-footer">
+        {% if session['user_category'] == 'SuperAdmin' %}
+        <button class="btn btn-danger" id="inactiveBtn" onclick="enableInactiveMode()">Mark as InActive</button>
+        <button class="btn btn-warning d-none" id="confirmInactiveBtn" onclick="confirmInactive()">
+          Confirm InActive
+        </button>
+        <button class="btn btn-outline-secondary d-none" id="exitInactiveBtn" onclick="exitInactiveMode()">
+          Exit Inactive Mode
+        </button>
+        {% endif %}
         <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
       </div>
 
@@ -799,6 +816,86 @@ function toggleEdit(button) {
     </div>
 
     <script>
+      //Exit Inactive Mode...///...//
+      function exitInactiveMode() {
+        inactiveMode = false;
+
+        // Hide checkbox column
+        document.getElementById("selectAllTh").style.display = "none";
+
+        document.querySelectorAll(".selectTd").forEach(td => {
+          td.style.display = "none";
+        });
+
+        // Reset all checkboxes
+        document.querySelectorAll(".empCheckbox").forEach(cb => {
+          cb.checked = false;
+        });
+
+        // Reset buttons
+        document.getElementById("inactiveBtn").classList.remove("d-none");
+        document.getElementById("confirmInactiveBtn").classList.add("d-none");
+        document.getElementById("exitInactiveBtn").classList.add("d-none");
+      }
+      //Setting Users Inactive....////
+      let inactiveMode = false;
+
+      function enableInactiveMode() {
+        inactiveMode = true;
+
+        document.getElementById("inactiveBtn").classList.add("d-none");
+        document.getElementById("confirmInactiveBtn").classList.remove("d-none");
+        document.getElementById("exitInactiveBtn").classList.remove("d-none");
+
+        document.getElementById("selectAllTh").style.display = "";
+
+        document.querySelectorAll(".selectTd").forEach(td => {
+          td.style.display = "";
+        });
+      }
+
+      function toggleAll(source) {
+        document.querySelectorAll(".empCheckbox").forEach(cb => {
+          cb.checked = source.checked;
+        });
+      }
+
+      function confirmInactive() {
+        const selected = [];
+
+        document.querySelectorAll(".empCheckbox:checked").forEach(cb => {
+          selected.push(cb.value);
+        });
+
+        if (selected.length === 0) {
+          alert("Please select at least one employee.");
+          return;
+        }
+
+        if (!confirm("Are you sure you want to mark selected employees as inactive?")) {
+          return;
+        }
+
+        console.log(selected);
+
+        // 🔥 SEND TO BACKEND
+        fetch("/mark_employee_inactive", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ employees: selected })
+        })
+        .then(res => res.json())
+        .then(data => {
+          alert(data.message);
+          location.reload();
+        })
+        .catch(err => {
+          alert("Error updating employees");
+          console.error(err);
+        });
+      }
       /* ---------------- SEARCH FILTER ---------------- */
       function filterEmployees() {
         const input = document.getElementById("employeeSearch").value.toLowerCase();
@@ -827,7 +924,7 @@ function toggleEdit(button) {
         const values = new Set();
 
         for (let row of rows) {
-          values.add(row.cells[1].innerText.trim()); // Name
+          values.add(row.cells[2].innerText.trim()); // Name
         }
 
         values.forEach(val => {
@@ -851,38 +948,44 @@ function toggleEdit(button) {
     <script>
       let employeeSortDir = {};
 
-      function sortEmployeeTable(colIndex) {
+      function sortEmployeeTable(th) {
         const table = document.getElementById("employeeTable");
         const tbody = table.tBodies[0];
         const rows = Array.from(tbody.rows);
 
-        // Toggle sort direction
+        // Get exact column index from header row
+        const headers = Array.from(th.parentElement.children);
+        const colIndex = headers.indexOf(th);
+
+        // Do not sort checkbox column
+        if (th.id === "selectAllTh") return;
+
+        // Toggle direction
         const dir = employeeSortDir[colIndex] === "asc" ? "desc" : "asc";
         employeeSortDir[colIndex] = dir;
 
         rows.sort((a, b) => {
+          if (!a.cells[colIndex] || !b.cells[colIndex]) return 0;
+
           let valA = a.cells[colIndex].innerText.trim();
           let valB = b.cells[colIndex].innerText.trim();
 
-          // -------- DATE (DD Mon YYYY) --------
-          if (colIndex === 2 || colIndex === 3) {
+          // DOJ / DOB
+          if (colIndex === 3 || colIndex === 4) {
             valA = new Date(valA);
             valB = new Date(valB);
           }
-
-          // -------- AGE ("12 Yrs 3 Months") --------
-          else if (colIndex === 4) {
-            valA = parseInt(valA);
-            valB = parseInt(valB);
+          // Age
+          else if (colIndex === 5) {
+            valA = parseInt(valA) || 0;
+            valB = parseInt(valB) || 0;
           }
-
-          // -------- NUMBER --------
+          // Number
           else if (!isNaN(valA) && !isNaN(valB)) {
             valA = Number(valA);
             valB = Number(valB);
           }
-
-          // -------- STRING --------
+          // String
           else {
             valA = valA.toLowerCase();
             valB = valB.toLowerCase();
@@ -893,10 +996,11 @@ function toggleEdit(button) {
           return 0;
         });
 
-        // Re-attach sorted rows
         rows.forEach(row => tbody.appendChild(row));
       }
-    </script>
+      </script>
+
+
 
 
 <!-- Bootstrap JS Bundle -->

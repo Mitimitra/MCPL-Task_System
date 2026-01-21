@@ -1,193 +1,401 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Project History</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Project History</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- Bootstrap 5 CSS CDN -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <!-- Bootstrap 5 CSS CDN -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
 
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
-    * {
-      font-family: 'Poppins', sans-serif;
-    }
-    body {
-      padding-top: 56px;
-    }
-    label {
-      font-weight: bold;
-    }
-    .modal-spinner-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(255, 255, 255, 0.7);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 10;
-    }
-  </style>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
+      * {
+        font-family: "Poppins", sans-serif;
+      }
+      body {
+        padding-top: 56px;
+      }
+      label {
+        font-weight: bold;
+      }
+      .modal-spinner-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+      }
+    </style>
 
-  <script>
-    function updateProjectName() {
-      var projectDropdown = document.getElementById("project_code");
-      var projectNameField = document.getElementById("project_name");
-      var projectData = {{ projects | tojson | safe }};
+    <script>
+      function updateProjectName() {
+        var projectDropdown = document.getElementById("project_code");
+        var projectNameField = document.getElementById("project_name");
+        var projectData = {{ projects | tojson | safe }};
 
-      var selectedCode = projectDropdown.value;
-      for (var i = 0; i < projectData.length; i++) {
-        if (projectData[i].code === selectedCode) {
-          projectNameField.value = projectData[i].name;
-          break;
+        var selectedCode = projectDropdown.value;
+        for (var i = 0; i < projectData.length; i++) {
+          if (projectData[i].code === selectedCode) {
+            projectNameField.value = projectData[i].name;
+            break;
+          }
         }
       }
-    }
-  </script>
-</head>
-<body>
-  <!-- Navbar -->
-  <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
-    <div class="container-fluid">
-      <a class="navbar-brand" href="#">Task Management</a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
-              data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown"
-              aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-      </button>
+    </script>
+  </head>
+  <body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="#">Task Management</a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNavDropdown"
+          aria-controls="navbarNavDropdown"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
 
-      <div class="collapse navbar-collapse" id="navbarNavDropdown">
-        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-          <li class="nav-item"><a class="nav-link" href="{{ url_for('dashboard') }}">Dashboard</a></li>
-          <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle active" href="#" id="navbarDropdownProfile"
-               role="button" data-bs-toggle="dropdown" aria-expanded="false">
-              Tasks Management
-            </a>
-            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownProfile">
-              <li><a class="dropdown-item active" href="{{ url_for('project_history') }}">Project History / Tasks Performed</a></li>
-              <li><a class="dropdown-item" href="{{ url_for('tasks_assigned') }}">Tasks Assigned</a></li>
-            </ul>
-          </li>
-          <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" href="{{ url_for('dashboard') }}" id="navbarDropdownProfile"
-               role="button" data-bs-toggle="dropdown" aria-expanded="false">
-              Reports Management
-            </a>
-            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownProfile">
-              <li><a class="dropdown-item" href="{{ url_for('project_history_report') }}">Project History Report</a></li>
-              <li><a class="dropdown-item" href="{{ url_for('tasks_performed_report') }}">Task Reports</a></li>
-            </ul>
-          </li>
-          {% if session['user_category'] == 'SuperAdmin' %}
-          <li class="nav-item dropdown">
-            <a href="#" class="nav-link dropdown-toggle" id="navbarDropdownProfile" role="button"
-               data-bs-toggle="dropdown" aria-expanded="false">Admin Panel</a>
-            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownProfile">
-              <li><a href="#" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#addProjectModal">Add a Project</a></li>
-              <li><a href="#" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">Add an Employee</a></li>
-              <li><a href="#" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#assignProjectToEmployeeModal">Assign Project to Employee</a></li>
-            </ul>
-          </li>
-          {% endif %}
-          {% if session['user_category'] == 'SuperAdmin' or session['user_category'] == 'Admin' %}
-          <li class="nav-item"><a href="{{ url_for('director_meetings') }}" class="nav-link">Director Meetings</a></li>
-          {% endif %}
-        </ul>
+        <div class="collapse navbar-collapse" id="navbarNavDropdown">
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('dashboard') }}"
+                >Dashboard</a
+              >
+            </li>
+            <li class="nav-item dropdown">
+              <a
+                class="nav-link dropdown-toggle active"
+                href="#"
+                id="navbarDropdownProfile"
+                role="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                Tasks Management
+              </a>
+              <ul
+                class="dropdown-menu dropdown-menu-end"
+                aria-labelledby="navbarDropdownProfile"
+              >
+                <li>
+                  <a
+                    class="dropdown-item active"
+                    href="{{ url_for('project_history') }}"
+                    >Project History / Tasks Performed</a
+                  >
+                </li>
+                <li>
+                  <a
+                    class="dropdown-item"
+                    href="{{ url_for('tasks_assigned') }}"
+                    >Tasks Assigned</a
+                  >
+                </li>
+              </ul>
+            </li>
+            <li class="nav-item dropdown">
+              <a
+                class="nav-link dropdown-toggle"
+                href="{{ url_for('dashboard') }}"
+                id="navbarDropdownProfile"
+                role="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                Reports Management
+              </a>
+              <ul
+                class="dropdown-menu dropdown-menu-end"
+                aria-labelledby="navbarDropdownProfile"
+              >
+                <li>
+                  <a
+                    class="dropdown-item"
+                    href="{{ url_for('project_history_report') }}"
+                    >Project History Report</a
+                  >
+                </li>
+                <li>
+                  <a
+                    class="dropdown-item"
+                    href="{{ url_for('tasks_performed_report') }}"
+                    >Task Reports</a
+                  >
+                </li>
+              </ul>
+            </li>
+            {% if session['user_category'] == 'SuperAdmin' %}
+            <li class="nav-item dropdown">
+              <a
+                href="#"
+                class="nav-link dropdown-toggle"
+                id="navbarDropdownProfile"
+                role="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+                >Admin Panel</a
+              >
+              <ul
+                class="dropdown-menu dropdown-menu-end"
+                aria-labelledby="navbarDropdownProfile"
+              >
+                <li>
+                  <a
+                    href="#"
+                    class="dropdown-item"
+                    data-bs-toggle="modal"
+                    data-bs-target="#addProjectModal"
+                    >Add a Project</a
+                  >
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    class="dropdown-item"
+                    data-bs-toggle="modal"
+                    data-bs-target="#addEmployeeModal"
+                    >Add an Employee</a
+                  >
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    class="dropdown-item"
+                    data-bs-toggle="modal"
+                    data-bs-target="#assignProjectToEmployeeModal"
+                    >Assign Project to Employee</a
+                  >
+                </li>
+              </ul>
+            </li>
+            {% endif %} {% if session['user_category'] == 'SuperAdmin' or
+            session['user_category'] == 'Admin' %}
+            <li class="nav-item">
+              <a href="{{ url_for('director_meetings') }}" class="nav-link"
+                >Director Meetings</a
+              >
+            </li>
+            {% endif %}
+          </ul>
 
-        <ul class="navbar-nav">
-          <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownProfile"
-               role="button" data-bs-toggle="dropdown" aria-expanded="false">Profile</a>
-            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownProfile">
-              <li><a class="dropdown-item" href="#" onclick="openPasswordModal()">Change Password</a></li>
-              <li><a class="dropdown-item" href="#">Account Settings</a></li>
-              {% if 'emp_name' in session %}
-              <li><a class="dropdown-item" href="{{ url_for('logout') }}">Logout</a></li>
-              {% endif %}
-            </ul>
-          </li>
-        </ul>
-      </div>
-    </div>
-  </nav>
-
-  <div class="container mt-4">
-    <div class="left-container">
-      <h3>Tasks Performed and Project History</h3>
-      {% if errormessage %}
-      <div class="position-fixed top-0 end-0 p-3" style="z-index: 1100;">
-        <div id="errorToast" class="toast align-items-center text-bg-danger border-0" role="alert"
-             aria-live="assertive" aria-atomic="true">
-          <div class="d-flex">
-            <div class="toast-body" id="errorToastMessage">{{ errormessage }}</div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-          </div>
+          <ul class="navbar-nav">
+            <li class="nav-item dropdown">
+              <a
+                class="nav-link dropdown-toggle"
+                href="#"
+                id="navbarDropdownProfile"
+                role="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+                >Profile</a
+              >
+              <ul
+                class="dropdown-menu dropdown-menu-end"
+                aria-labelledby="navbarDropdownProfile"
+              >
+                <li>
+                  <a
+                    class="dropdown-item"
+                    href="#"
+                    onclick="openPasswordModal()"
+                    >Change Password</a
+                  >
+                </li>
+                <li><a class="dropdown-item" href="#">Account Settings</a></li>
+                {% if 'emp_name' in session %}
+                <li>
+                  <a class="dropdown-item" href="{{ url_for('logout') }}"
+                    >Logout</a
+                  >
+                </li>
+                {% endif %}
+              </ul>
+            </li>
+          </ul>
         </div>
       </div>
-      {% endif %}
+    </nav>
 
-      <form method="post">
-        {% if projects %}
-        <input type="hidden" name="project_history_id" id="project_history_id">
-
-        <div class="row mb-1">
-          <div class="col-md-3"><label for="entry_date" class="form-label">Select Date of Entry *</label></div>
-          <div class="col-md-3"><label for="event_date" class="form-label">Event Date *</label></div>
-          <div class="col-md-3"><label for="project_code" class="form-label">Select Project Code *</label></div>
-        </div>
-
-        <div class="d-flex mb-3">
-          {% if today %}
-          <div class="me-3" style="width: 20%;">
-            <input type="date" class="form-control" id="entry_date" name="entry_date" readonly value="{{ today }}">
-          </div>
-          {% endif %}
-          <div class="me-3" style="width: 20%;">
-            <input type="date" class="form-control" id="event_date" name="event_date" value="{{ today }}" style="cursor: pointer;">
-          </div>
-          <div style="width: 20%;">
-            <select class="form-select" id="project_code" onchange="updateProjectName()" name="project_code" required style="cursor: pointer;">
-              <option selected>Select Project Code</option>
-              {% for p in projects %}
-              <option value="{{ p.code }}">{{ p.code }}</option>
-              {% endfor %}
-            </select>
+    <div class="container mt-4">
+      <div class="left-container">
+        <h3>Tasks Performed and Project History</h3>
+        {% if errormessage %}
+        <div class="position-fixed top-0 end-0 p-3" style="z-index: 1100">
+          <div
+            id="errorToast"
+            class="toast align-items-center text-bg-danger border-0"
+            role="alert"
+            aria-live="assertive"
+            aria-atomic="true"
+          >
+            <div class="d-flex">
+              <div class="toast-body" id="errorToastMessage">
+                {{ errormessage }}
+              </div>
+              <button
+                type="button"
+                class="btn-close btn-close-white me-2 m-auto"
+                data-bs-dismiss="toast"
+                aria-label="Close"
+              ></button>
+            </div>
           </div>
         </div>
+        {% endif %}
 
-        <div class="mb-3" style="width: 62.4%;">
-          <label for="project_name" class="form-label">Project Name *</label>
-          <textarea class="form-control" id="project_name" name="project_name" placeholder="Project Name" readonly></textarea>
-        </div>
+        <form method="post">
+          {% if projects %}
+          <input
+            type="hidden"
+            name="project_history_id"
+            id="project_history_id"
+          />
 
-        <div class="history-check" style="display: flex;">
-          <div class="form-check">
-            <input class="form-check-input" type="radio" name="isHistory" id="historyInclude" value="true" style="cursor: pointer;" checked>
-            <label class="form-check-label" for="historyInclude">Include In History</label>
+          <div class="row mb-1">
+            <div class="col-md-3">
+              <label for="entry_date" class="form-label"
+                >Select Date of Entry *</label
+              >
+            </div>
+            <div class="col-md-3">
+              <label for="event_date" class="form-label">Event Date *</label>
+            </div>
+            <div class="col-md-3">
+              <label for="project_code" class="form-label"
+                >Select Project Code *</label
+              >
+            </div>
           </div>
-          <div class="form-check" style="margin-left: 1rem;">
-            <input class="form-check-input" type="radio" name="isHistory" id="historyNotInclude" value="false" style="cursor: pointer;">
-            <label class="form-check-label" for="historyNotInclude">Do Not Include in History</label>
-          </div>
-          <div class="form-check">
-            <input class="form-check-input" type="radio" name="IsRework" id="rework" value="true" style="cursor: pointer; margin-left: 1rem;">
-            <label class="form-check-label" for="rework">Rework</label>
-          </div>
-          <div class="form-check" style="margin-left: 1rem;">
-            <input class="form-check-input" type="radio" name="IsRework" id="norework" value="false" style="cursor: pointer; margin-left: 1rem;" checked>
-            <label class="form-check-label" for="norework">No Rework</label>
-          </div>
-        </div>
 
-        <div class="work-type" style="margin-left: 1rem;">
+          <div class="d-flex mb-3">
+            {% if today %}
+            <div class="me-3" style="width: 20%">
+              <input
+                type="date"
+                class="form-control"
+                id="entry_date"
+                name="entry_date"
+                readonly
+                value="{{ today }}"
+              />
+            </div>
+            {% endif %}
+            <div class="me-3" style="width: 20%">
+              <input
+                type="date"
+                class="form-control"
+                id="event_date"
+                name="event_date"
+                value="{{ today }}"
+                style="cursor: pointer"
+              />
+            </div>
+            <div style="width: 20%">
+              <select
+                class="form-select"
+                id="project_code"
+                onchange="updateProjectName()"
+                name="project_code"
+                required
+                style="cursor: pointer"
+              >
+                <option selected>Select Project Code</option>
+                {% for p in projects %}
+                <option value="{{ p.code }}">{{ p.code }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <div class="mb-3" style="width: 62.4%">
+            <label for="project_name" class="form-label">Project Name *</label>
+            <textarea
+              class="form-control"
+              id="project_name"
+              name="project_name"
+              placeholder="Project Name"
+              readonly
+            ></textarea>
+          </div>
+
+          <div class="history-check" style="display: flex">
+            <div class="form-check">
+              <input
+                class="form-check-input"
+                type="radio"
+                name="isHistory"
+                id="historyInclude"
+                value="true"
+                style="cursor: pointer"
+                checked
+              />
+              <label class="form-check-label" for="historyInclude"
+                >Include In History</label
+              >
+            </div>
+            <div class="form-check" style="margin-left: 1rem">
+              <input
+                class="form-check-input"
+                type="radio"
+                name="isHistory"
+                id="historyNotInclude"
+                value="false"
+                style="cursor: pointer"
+              />
+              <label class="form-check-label" for="historyNotInclude"
+                >Do Not Include in History</label
+              >
+            </div>
+            <div class="form-check">
+              <input
+                class="form-check-input"
+                type="radio"
+                name="IsRework"
+                id="rework"
+                value="true"
+                style="cursor: pointer; margin-left: 1rem"
+              />
+              <label class="form-check-label" for="rework">Rework</label>
+            </div>
+            <div class="form-check" style="margin-left: 1rem">
+              <input
+                class="form-check-input"
+                type="radio"
+                name="IsRework"
+                id="norework"
+                value="false"
+                style="cursor: pointer; margin-left: 1rem"
+                checked
+              />
+              <label class="form-check-label" for="norework">No Rework</label>
+            </div>
+          </div>
+
+          <div class="work-type" style="margin-left: 1rem">
             {% if work_type %}
-            <label for="work_type" style="margin-top: 1rem;">Work Type</label>
-            <select class="form-select" id="work_type" name="work_type" aria-label="Default select example" required style="cursor: pointer; width: 20%; margin-bottom: 1rem;">
+            <label for="work_type" style="margin-top: 1rem">Work Type</label>
+            <select
+              class="form-select"
+              id="work_type"
+              name="work_type"
+              aria-label="Default select example"
+              required
+              style="cursor: pointer; width: 20%; margin-bottom: 1rem"
+            >
               <option selected>Select Work Type *</option>
               {% for work in work_type %}
               <option value="{{ work.id }}">{{ work.work_type }}</option>
@@ -196,128 +404,196 @@
             {% endif %}
           </div>
 
-        <div class="mb-3" style="width: 30%;">
-          <label for="task_assigned_by" class="form-label">Task Assigned By *</label>
-          <select name="task_assigned_by" id="task_assigned_by" class="form-select" style="cursor: pointer;" required>
-            <option selected>Select Assigner Name</option>
-            {% for emp in empNames %}
-            <option value="{{ emp.id }}">{{ emp.name }}</option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <div class="mb-3" style="flex-direction: column;">
-          <label for="time_spent" class="form-label">Enter the Time Spent (in hours) *</label>
-          <input type="text" name="time_spent" id="time_spent" class="form-control" style="width: 20%;">
-        </div>
-
-        <div class="mb-3" style="width: 62.4%;">
-          <label for="event_desc" class="form-label">Event Description *</label>
-          <textarea class="form-control" id="event_desc" placeholder="Please Enter Event Desc." name="event_desc"></textarea>
-        </div>
-        <div class="mb-3" style="width: 62.4%;">
-          <label for="remarks" class="form-label">Remarks</label>
-          <textarea class="form-control" id="remarks" name="remarks" placeholder="Please Enter Remarks"></textarea>
-        </div>
-
-        <button id="submitBtn" type="submit" class="btn btn-outline-success">Save Details</button>
-        <button id="viewListings" type="button" class="btn btn-outline-primary">View Listings</button>
-        {% endif %}
-
-        {% if message %}
-        <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1100">
-          <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true" id="myToast">
-            <div class="toast-header">
-              <img src="..." class="rounded me-2" alt="...">
-              <strong class="me-auto">Server Message</strong>
-              <small id="toast-timer">Now</small>
-              <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
-            </div>
-            <div class="toast-body">{{ message }}</div>
+          <div class="mb-3" style="width: 30%">
+            <label for="task_assigned_by" class="form-label"
+              >Task Assigned By *</label
+            >
+            <select
+              name="task_assigned_by"
+              id="task_assigned_by"
+              class="form-select"
+              style="cursor: pointer"
+              required
+            >
+              <option selected>Select Assigner Name</option>
+              {% for emp in empNames %}
+              <option value="{{ emp.id }}">{{ emp.name }}</option>
+              {% endfor %}
+            </select>
           </div>
-        </div>
-        {% endif %}
-      </form>
 
-      <!-- Modal -->
-      <div class="modal fade" id="projectHistoryModal" tabindex="-1"
-           aria-labelledby="projectHistoryModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered">
-          <div class="modal-content position-relative">
-            <div class="modal-header">
-              <h5 class="modal-title" id="projectHistoryModalLabel">Project History</h5>
-              <button type="button" class="btn btn-close" data-bs-dismiss="modal"
-                      aria-label="Close" style="width: 5%;"></button>
-            </div>
-            <div class="modal-body modal-dialog-scrollable" style="overflow: scroll; position: relative;">
-              <div class="mb-3">
-                <label for="filterProjectCode" class="form-label">Filter by Project Code:</label>
-                <select class="form-select" id="filterProjectCode">
-                  <option value="all">All</option>
-                </select>
+          <div class="mb-3" style="flex-direction: column">
+            <label for="time_spent" class="form-label"
+              >Enter the Time Spent (in hours) *</label
+            >
+            <input
+              type="text"
+              name="time_spent"
+              id="time_spent"
+              class="form-control"
+              style="width: 20%"
+            />
+          </div>
+
+          <div class="mb-3" style="width: 62.4%">
+            <label for="event_desc" class="form-label"
+              >Event Description *</label
+            >
+            <textarea
+              class="form-control"
+              id="event_desc"
+              placeholder="Please Enter Event Desc."
+              name="event_desc"
+            ></textarea>
+          </div>
+          <div class="mb-3" style="width: 62.4%">
+            <label for="remarks" class="form-label">Remarks</label>
+            <textarea
+              class="form-control"
+              id="remarks"
+              name="remarks"
+              placeholder="Please Enter Remarks"
+            ></textarea>
+          </div>
+
+          <button id="submitBtn" type="submit" class="btn btn-outline-success">
+            Save Details
+          </button>
+          <button
+            id="viewListings"
+            type="button"
+            class="btn btn-outline-primary"
+          >
+            View Listings
+          </button>
+          {% endif %} {% if message %}
+          <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1100">
+            <div
+              class="toast show"
+              role="alert"
+              aria-live="assertive"
+              aria-atomic="true"
+              id="myToast"
+            >
+              <div class="toast-header">
+                <img src="..." class="rounded me-2" alt="..." />
+                <strong class="me-auto">Server Message</strong>
+                <small id="toast-timer">Now</small>
+                <button
+                  type="button"
+                  class="btn-close"
+                  data-bs-dismiss="toast"
+                  aria-label="Close"
+                ></button>
               </div>
+              <div class="toast-body">{{ message }}</div>
+            </div>
+          </div>
+          {% endif %}
+        </form>
 
-              <table class="table table-bordered" id="historyTable">
-                <thead>
-                  <tr>
-                    <th>Sr.No.</th>
-                    <th>Event Date</th>
-                    <th>Filled By</th>
-                    <th>Project</th>
-                    <th>Work Type + Event Description</th>
-                    <th>Time Spent</th>
-                    <th>Is History</th>
-                    <th>Remarks</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody id="modalListingTableBody"></tbody>
-              </table>
+        <!-- Modal -->
+        <div
+          class="modal fade"
+          id="projectHistoryModal"
+          tabindex="-1"
+          aria-labelledby="projectHistoryModalLabel"
+          aria-hidden="true"
+        >
+          <div
+            class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered"
+          >
+            <div class="modal-content position-relative">
+              <div class="modal-header">
+                <h5 class="modal-title" id="projectHistoryModalLabel">
+                  Project History
+                </h5>
+                <button
+                  type="button"
+                  class="btn btn-close"
+                  data-bs-dismiss="modal"
+                  aria-label="Close"
+                  style="width: 5%"
+                ></button>
+              </div>
+              <div
+                class="modal-body modal-dialog-scrollable"
+                style="overflow: scroll; position: relative"
+              >
+                <div class="mb-3">
+                  <label for="filterProjectCode" class="form-label"
+                    >Filter by Project Code:</label
+                  >
+                  <select class="form-select" id="filterProjectCode">
+                    <option value="all">All</option>
+                  </select>
+                </div>
+
+                <table class="table table-bordered" id="historyTable">
+                  <thead>
+                    <tr>
+                      <th>Sr.No.</th>
+                      <th>Event Date</th>
+                      <th>Filled By</th>
+                      <th>Project</th>
+                      <th>Work Type + Event Description</th>
+                      <th>Time Spent</th>
+                      <th>Is History</th>
+                      <th>Remarks</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="modalListingTableBody"></tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
       </div>
-
     </div>
-  </div>
 
-  <!-- Spinner overlay for modal -->
-  <div id="modalSpinnerOverlay" class="modal-spinner-overlay d-none">
-    <div>
-      <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Loading...</span>
+    <!-- Spinner overlay for modal -->
+    <div id="modalSpinnerOverlay" class="modal-spinner-overlay d-none">
+      <div>
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+        <div class="mt-2 text-center">Loading listings...</div>
       </div>
-      <div class="mt-2 text-center">Loading listings...</div>
     </div>
-  </div>
 
-  <!-- Bootstrap JS Bundle -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-  <script>
-    document.getElementById("viewListings").addEventListener("click", function () {
-      const modalTitle = document.getElementById("projectHistoryModalLabel");
-      modalTitle.textContent = `Project History Sheet of {{ session['emp_name'] }}`;
+    <script>
+      document
+        .getElementById("viewListings")
+        .addEventListener("click", function () {
+          const modalTitle = document.getElementById(
+            "projectHistoryModalLabel",
+          );
+          modalTitle.textContent = `Project History Sheet of {{ session['emp_name'] }}`;
 
-      const spinnerOverlay = document.getElementById("modalSpinnerOverlay");
-      spinnerOverlay.classList.remove("d-none");
+          const spinnerOverlay = document.getElementById("modalSpinnerOverlay");
+          spinnerOverlay.classList.remove("d-none");
 
-      fetch(`/get_project_history_by_code`)
-        .then(response => response.json())
-        .then(data => {
-          const tbody = document.getElementById("modalListingTableBody");
-          const filterDropdown = document.getElementById("filterProjectCode");
-          const uniqueCodes = new Set();
+          fetch(`/get_project_history_by_code`)
+            .then((response) => response.json())
+            .then((data) => {
+              const tbody = document.getElementById("modalListingTableBody");
+              const filterDropdown =
+                document.getElementById("filterProjectCode");
+              const uniqueCodes = new Set();
 
-          tbody.innerHTML = "";
-          filterDropdown.innerHTML = '<option value="all">All</option>';
+              tbody.innerHTML = "";
+              filterDropdown.innerHTML = '<option value="all">All</option>';
 
-          if (!data || data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="9" class="text-center">No records found.</td></tr>`;
-          } else {
-            data.forEach(record => {
-              const row = document.createElement("tr");
-              row.innerHTML = `
+              if (!data || data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9" class="text-center">No records found.</td></tr>`;
+              } else {
+                data.forEach((record) => {
+                  const row = document.createElement("tr");
+                  row.innerHTML = `
                 <td>${record.SrNo}</td>
                 <td>${record.EventDate}</td>
                 <td>${record.EmpName}</td>
@@ -328,130 +604,151 @@
                 <td>${record.Remarks}</td>
                 <td><button class="btn btn-primary edit-btn" data-id="${record.ProjectHistoryID}">Edit</button></td>
               `;
-              tbody.appendChild(row);
+                  tbody.appendChild(row);
 
-              uniqueCodes.add(record.ProjectCode);
+                  uniqueCodes.add(record.ProjectCode);
+                });
+
+                // populate filter dropdown
+                Array.from(uniqueCodes)
+                  .sort()
+                  .forEach((code) => {
+                    const opt = document.createElement("option");
+                    opt.value = code;
+                    opt.textContent = code;
+                    filterDropdown.appendChild(opt);
+                  });
+              }
+
+              spinnerOverlay.classList.add("d-none");
+              filterDropdown.value = "all";
+              const modal = new bootstrap.Modal(
+                document.getElementById("projectHistoryModal"),
+              );
+              modal.show();
+            })
+            .catch((error) => {
+              console.error("Error fetching project history:", error);
+              alert("Something went wrong fetching data.");
+              document
+                .getElementById("modalSpinnerOverlay")
+                .classList.add("d-none");
             });
-
-            // populate filter dropdown
-            Array.from(uniqueCodes).sort().forEach(code => {
-              const opt = document.createElement("option");
-              opt.value = code;
-              opt.textContent = code;
-              filterDropdown.appendChild(opt);
-            });
-          }
-
-          spinnerOverlay.classList.add("d-none");
-          filterDropdown.value = "all";
-          const modal = new bootstrap.Modal(document.getElementById("projectHistoryModal"));
-          modal.show();
-        })
-        .catch(error => {
-          console.error("Error fetching project history:", error);
-          alert("Something went wrong fetching data.");
-          document.getElementById("modalSpinnerOverlay").classList.add("d-none");
         });
-    });
 
-    document.getElementById("filterProjectCode").addEventListener("change", function () {
-      const selected = this.value;
-      const rows = document.querySelectorAll("#modalListingTableBody tr");
+      document
+        .getElementById("filterProjectCode")
+        .addEventListener("change", function () {
+          const selected = this.value;
+          const rows = document.querySelectorAll("#modalListingTableBody tr");
 
-      rows.forEach(row => {
-        const projectCell = row.cells[3];
-        if (!projectCell) return;
+          rows.forEach((row) => {
+            const projectCell = row.cells[3];
+            if (!projectCell) return;
 
-        const code = projectCell.textContent.trim();
-        if (selected === "all" || code === selected) {
-          row.style.display = "";
-        } else {
-          row.style.display = "none";
+            const code = projectCell.textContent.trim();
+            if (selected === "all" || code === selected) {
+              row.style.display = "";
+            } else {
+              row.style.display = "none";
+            }
+          });
+        });
+
+      document
+        .getElementById("modalListingTableBody")
+        .addEventListener("click", function (e) {
+          if (e.target && e.target.classList.contains("edit-btn")) {
+            const historyId = e.target.getAttribute("data-id");
+            fetch(`/get_project_history_by_id/${historyId}`)
+              .then((response) => response.json())
+              .then((data) => {
+                const notHistory = document.getElementById("historyNotInclude");
+                const history = document.getElementById("historyInclude");
+                const rework = document.getElementById("rework");
+                const norework = document.getElementById("norework");
+
+                document.getElementById("event_date").value = data.EventDate;
+                document.getElementById("event_desc").value = data.Event;
+                document.getElementById("remarks").value = data.Remarks;
+                document.getElementById("project_history_id").value =
+                  data.ProjectHistoryID;
+
+                const work_type = document.getElementById("work_type");
+                const project_code = document.getElementById("project_code");
+                const assigned_by = document.getElementById("task_assigned_by");
+                const time_spent = document.getElementById("time_spent");
+
+                if (
+                  data.IsHistory === false ||
+                  data.IsHistory === "False" ||
+                  data.IsHistory === "false"
+                ) {
+                  notHistory.checked = true;
+                } else {
+                  history.checked = true;
+                }
+                if (data.AssignerName) {
+                  assigned_by.value = data.AssignerName;
+                }
+                if (data.TimeSpent) {
+                  time_spent.value = data.TimeSpent;
+                }
+                if (data.WorkTypeID) {
+                  work_type.value = data.WorkTypeID;
+                }
+                if (data.ProjectCode) {
+                  project_code.value = data.ProjectCode;
+                  updateProjectName();
+                }
+                if (
+                  data.rework === false ||
+                  data.rework === "False" ||
+                  data.rework === "false"
+                ) {
+                  norework.checked = true;
+                } else {
+                  rework.checked = true;
+                  norework.checked = false;
+                }
+
+                const modalInst = bootstrap.Modal.getInstance(
+                  document.getElementById("projectHistoryModal"),
+                );
+                modalInst.hide();
+                alert("Data has been loaded for editing!");
+              })
+              .catch((err) => {
+                console.error("Error fetching by id:", err);
+                alert("Error loading record data.");
+              });
+          }
+        });
+
+      document.addEventListener("DOMContentLoaded", function () {
+        var toastEl = document.getElementById("myToast");
+        if (toastEl) {
+          var toast = new bootstrap.Toast(toastEl);
+          toast.show();
+
+          let secondsElapsed = 0;
+          const timerElement = document.getElementById("toast-timer");
+          const interval = setInterval(() => {
+            secondsElapsed++;
+            timerElement.innerText = `${secondsElapsed} sec ago`;
+          }, 1000);
+
+          toastEl.addEventListener("hidden.bs.toast", () => {
+            clearInterval(interval);
+          });
+        }
+
+        var errorToastEl = document.getElementById("errorToast");
+        if (errorToastEl) {
+          var errToast = new bootstrap.Toast(errorToastEl);
+          errToast.show();
         }
       });
-    });
-
-    document.getElementById("modalListingTableBody").addEventListener("click", function (e) {
-      if (e.target && e.target.classList.contains("edit-btn")) {
-        const historyId = e.target.getAttribute("data-id");
-        fetch(`/get_project_history_by_id/${historyId}`)
-          .then(response => response.json())
-          .then(data => {
-            const notHistory = document.getElementById("historyNotInclude");
-            const history = document.getElementById("historyInclude");
-            const rework = document.getElementById("rework");
-            const norework = document.getElementById("norework");
-
-            document.getElementById("event_date").value = data.EventDate;
-            document.getElementById("event_desc").value = data.Event;
-            document.getElementById("remarks").value = data.Remarks;
-            document.getElementById("project_history_id").value = data.ProjectHistoryID;
-
-            const work_type = document.getElementById('work_type');
-            const project_code = document.getElementById('project_code');
-            const assigned_by = document.getElementById('task_assigned_by');
-            const time_spent = document.getElementById('time_spent');
-
-            if (data.IsHistory === false || data.IsHistory === 'False' || data.IsHistory === 'false') {
-              notHistory.checked = true;
-            } else {
-              history.checked = true;
-            }
-            if (data.AssignerName) {
-              assigned_by.value = data.AssignerName;
-            }
-            if (data.TimeSpent) {
-              time_spent.value = data.TimeSpent;
-            }
-            if (data.WorkTypeID) {
-              work_type.value = data.WorkTypeID;
-            }
-            if (data.ProjectCode) {
-              project_code.value = data.ProjectCode;
-              updateProjectName();
-            }
-            if(data.rework === false || data.rework === "False" || data.rework === "false"){
-              norework.checked = true;
-            } else {
-              rework.checked = true;
-              norework.checked = false;
-            }
-
-            const modalInst = bootstrap.Modal.getInstance(document.getElementById("projectHistoryModal"));
-            modalInst.hide();
-            alert("Data has been loaded for editing!");
-          })
-          .catch(err => {
-            console.error("Error fetching by id:", err);
-            alert("Error loading record data.");
-          });
-      }
-    });
-
-    document.addEventListener("DOMContentLoaded", function () {
-      var toastEl = document.getElementById('myToast');
-      if (toastEl) {
-        var toast = new bootstrap.Toast(toastEl);
-        toast.show();
-
-        let secondsElapsed = 0;
-        const timerElement = document.getElementById("toast-timer");
-        const interval = setInterval(() => {
-          secondsElapsed++;
-          timerElement.innerText = `${secondsElapsed} sec ago`;
-        }, 1000);
-
-        toastEl.addEventListener('hidden.bs.toast', () => {
-          clearInterval(interval);
-        });
-      }
-
-      var errorToastEl = document.getElementById('errorToast');
-      if (errorToastEl) {
-        var errToast = new bootstrap.Toast(errorToastEl);
-        errToast.show();
-      }
-    });
-  </script>
-</body>
+    </script>
+  </body>
 </html>
