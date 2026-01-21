@@ -4,3 +4,4 @@ pdfkit
 setuptools>=70.0.0
 wheel
 gunicorn
+python-dateutil
