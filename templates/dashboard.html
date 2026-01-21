@@ -104,6 +104,7 @@ function applyReviewFilters() {
                   <a href="{{ url_for("director_meetings") }}" class="nav-link">Director Meetings</a>
                 </li>
                 {% endif %}
+                <li class="nav-item"><a href="" class="nav-link" data-bs-toggle="modal" data-bs-target="#employeeListModal">Employee List</a></li>
             </ul>
 
             <ul class="navbar-nav">
@@ -563,6 +564,7 @@ function submitPasswordUpdate() {
 </div>
 
 
+
 <script>
 function toggleEdit(button) {
   const row = button.closest("tr");
@@ -728,9 +730,174 @@ function toggleEdit(button) {
   </div>
 </div>
 
+<!-- Employee List Modal -->
+<div class="modal fade" id="employeeListModal" tabindex="-1" aria-labelledby="employeeListModalLabel" data-bs-backdrop="static" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title" id="employeeListModalLabel">Employee List</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+
+        <!-- Search -->
+        <div class="row mb-3">
+          <div class="col-md-4">
+            <input type="text"
+                  id="employeeSearch"
+                  class="form-control"
+                  placeholder="Search employee..."
+                  list="employeeSuggestions"
+                  onkeyup="filterEmployees()">
+
+            <datalist id="employeeSuggestions"></datalist>
+
+          </div>
+        </div>
+
+        <table class="table table-bordered table-striped table-hover align-middle" id="employeeTable">
+          <thead class="table-dark">
+            <tr>
+              <th onclick="sortEmployeeTable(0)">Sr.No ⬍</th>
+              <th onclick="sortEmployeeTable(1)">Name ⬍</th>
+              <th onclick="sortEmployeeTable(2)">Date Of Joining ⬍</th>
+              <th onclick="sortEmployeeTable(3)">Date of Birth ⬍</th>
+              <th onclick="sortEmployeeTable(4)">Age ⬍</th>
+              <th onclick="sortEmployeeTable(5)">Email Address ⬍</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for emp in employee_list %}
+            <tr>
+              <td>{{ emp.SrNo }}</td>
+              <td>{{ emp.name }}</td>
+              <td>{{ emp.doj }}</td>
+              <td>{{ emp.dob }}</td>
+              <td>{{ emp.age }}</td>
+              <td>{{ emp.email }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
 
 
     </div>
+
+    <script>
+      /* ---------------- SEARCH FILTER ---------------- */
+      function filterEmployees() {
+        const input = document.getElementById("employeeSearch").value.toLowerCase();
+        const table = document.getElementById("employeeTable");
+        const rows = table.tBodies[0].rows;
+
+        for (let row of rows) {
+          let match = false;
+          for (let cell of row.cells) {
+            if (cell.innerText.toLowerCase().includes(input)) {
+              match = true;
+              break;
+            }
+          }
+          row.style.display = match ? "" : "none";
+        }
+      }
+
+      /* ---------------- AUTOCOMPLETE ---------------- */
+      function loadEmployeeSuggestions() {
+        const datalist = document.getElementById("employeeSuggestions");
+        datalist.innerHTML = "";
+
+        const table = document.getElementById("employeeTable");
+        const rows = table.tBodies[0].rows;
+        const values = new Set();
+
+        for (let row of rows) {
+          values.add(row.cells[1].innerText.trim()); // Name
+        }
+
+        values.forEach(val => {
+          const option = document.createElement("option");
+          option.value = val;
+          datalist.appendChild(option);
+        });
+      }
+
+      /* ------------- RESET ON MODAL OPEN ------------- */
+      document.getElementById('employeeListModal')
+        .addEventListener('shown.bs.modal', () => {
+          document.getElementById("employeeSearch").value = "";
+          filterEmployees();
+          loadEmployeeSuggestions();
+        });
+    </script>
+
+
+    <!-- Employee Table Sorting -->
+    <script>
+      let employeeSortDir = {};
+
+      function sortEmployeeTable(colIndex) {
+        const table = document.getElementById("employeeTable");
+        const tbody = table.tBodies[0];
+        const rows = Array.from(tbody.rows);
+
+        // Toggle sort direction
+        const dir = employeeSortDir[colIndex] === "asc" ? "desc" : "asc";
+        employeeSortDir[colIndex] = dir;
+
+        rows.sort((a, b) => {
+          let valA = a.cells[colIndex].innerText.trim();
+          let valB = b.cells[colIndex].innerText.trim();
+
+          // -------- DATE (DD Mon YYYY) --------
+          if (colIndex === 2 || colIndex === 3) {
+            valA = new Date(valA);
+            valB = new Date(valB);
+          }
+
+          // -------- AGE ("12 Yrs 3 Months") --------
+          else if (colIndex === 4) {
+            valA = parseInt(valA);
+            valB = parseInt(valB);
+          }
+
+          // -------- NUMBER --------
+          else if (!isNaN(valA) && !isNaN(valB)) {
+            valA = Number(valA);
+            valB = Number(valB);
+          }
+
+          // -------- STRING --------
+          else {
+            valA = valA.toLowerCase();
+            valB = valB.toLowerCase();
+          }
+
+          if (valA < valB) return dir === "asc" ? -1 : 1;
+          if (valA > valB) return dir === "asc" ? 1 : -1;
+          return 0;
+        });
+
+        // Re-attach sorted rows
+        rows.forEach(row => tbody.appendChild(row));
+      }
+    </script>
+
 
 <!-- Bootstrap JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

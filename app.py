@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, session, jsonify, send_file
 from datetime import datetime, timedelta, date
+from dateutil.relativedelta import relativedelta
 import pdfkit
 from io import BytesIO
 import psycopg2
@@ -91,7 +92,18 @@ def dashboard():
         tasks_under_review = [{"SrNo" : row[0], "task_description" : row[1] , "assigned_to" : row[2], "project_details" : row[3]+" : "+row[4], "remarks": row[5], "status": row[6],"target_date":row[7], "date_of_entry" : row[8]}for row in cursor.fetchall()]
         print("Tasks Under Review",tasks_under_review)
         
-        return render_template("dashboard.html",assigned_tasks=assigned_tasks,tasks_under_review=tasks_under_review,designations=designations,branches=branches,projects=projects, users=users)
+        cursor.execute("""
+                       SELECT "EmpName", "DateOfJoining", "DateOfBirth", "UserEmail" FROM "UserMaster"
+                       WHERE "IsActive" = true ORDER BY "DateOfJoining" ASC;
+                       """)
+        
+        today = date.today()
+        
+        employee_list = [{"SrNo" : i+1,"name": row[0], "doj": row[1].strftime("%d %b %Y"), "dob": row[2].strftime("%d %b %Y"), "age": f"{relativedelta(today, row[2]).years} Yrs {relativedelta(today, row[2]).months} Months and {relativedelta(today, row[2]).days} Days", "email": row[3]} for i,row in enumerate(cursor.fetchall())]
+        
+        
+        
+        return render_template("dashboard.html",assigned_tasks=assigned_tasks,tasks_under_review=tasks_under_review,designations=designations,branches=branches,projects=projects, users=users, employee_list=employee_list)
     else:
         return render_template("login.html", message="Your session has been timed out. Please Log in again.")
     
@@ -736,8 +748,9 @@ def project_hist_report_pdf():
                     SELECT DISTINCT um."EmpName", CAST(SUM(ph."TimeSpent") AS NUMERIC(10,2)) FROM "ProjectHistory" ph
                     JOIN "UserMaster" um ON ph."UserID" = um."UserID"
                     JOIN "ProjectMaster" pm ON ph."ProjectID" = pm."ProjectID"
-                    WHERE pm."ProjectCode" = %s GROUP BY um."EmpName" ORDER BY CAST(SUM(ph."TimeSpent") AS NUMERIC(10,2)) DESC;
-                    """,[project_code])
+                    WHERE pm."ProjectCode" = %s AND ph."EventDate" >= %s
+                    AND ph."EventDate" < %s GROUP BY um."EmpName" ORDER BY CAST(SUM(ph."TimeSpent") AS NUMERIC(10,2)) DESC;
+                    """,[project_code,date_from_obj,date_to_obj])
     
     project_abstract_details = [{"SrNo" : i, "name": row[0], "time_spent": row[1]}for i,row in enumerate(cursor.fetchall(), start=1)]
     
@@ -821,8 +834,9 @@ def tasks_performed_pdf_report():
                     SELECT DISTINCT pm."ProjectCode", pm."ProjectName", CAST(SUM(ph."TimeSpent") AS NUMERIC(10,2)) FROM "ProjectHistory" ph
                     JOIN "UserMaster" um ON ph."UserID" = um."UserID"
                     JOIN "ProjectMaster" pm ON ph."ProjectID" = pm."ProjectID"
-                    WHERE um."EmpName" = %s GROUP BY pm."ProjectCode", pm."ProjectName" ORDER BY CAST(SUM(ph."TimeSpent") AS NUMERIC(10,2)) DESC;
-                   """,[empName])
+                    WHERE um."EmpName" = %s AND ph."EventDate" >= %s
+                    AND ph."EventDate" < %s GROUP BY pm."ProjectCode", pm."ProjectName" ORDER BY CAST(SUM(ph."TimeSpent") AS NUMERIC(10,2)) DESC;
+                   """,[empName, date_from_obj, date_to_obj])
     
     emp_abstract = [{"srno" : i, "project_code": row[0], "project_name": row[1], "time_spent": row[2]}for i,row in enumerate(cursor.fetchall(),start=1)]
     

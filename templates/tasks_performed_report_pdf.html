@@ -46,7 +46,7 @@
         <thead>
             <th>Sr.No</th>
             <th>Project Details</th>
-            <th>Time Spent</th>
+            <th>Time Spent (in hrs)</th>
         </thead>
         <tbody>
             {% for emp in emp_abstract %}
@@ -57,7 +57,9 @@
             </tr>
             {% endfor %}
             <tr>
-                <td>Total Time Spent: {{total_time_spent}} hrs</td>
+                <td>0</td>
+                <td>Total Time Spent:</td>
+                <td>{{total_time_spent}}</td>
             </tr>
         </tbody>
     </table>
