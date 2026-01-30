@@ -11,6 +11,9 @@
             margin: 0;
             padding: 0;
         }
+        .is-invalid{
+            border-color: #dc3545 !important;
+        }
     </style>
     <script>
             function updateProjectName() {
@@ -113,19 +116,16 @@
     <div class="main" style="margin: 5rem; display: flex;">
         <div class="task-assigned-form" style="width: 100%;">
             <h3>Tasks Assigned Details</h3>
-            {% if errormessage %}
-
-                <div class="position-fixed top-0 end-0 p-3" style="z-index: 1100;">
-                    <div id="errorToast" class="toast align-items-center text-bg-danger border-0" role="alert"
-                        aria-live="assertive" aria-atomic="true">
-                    <div class="d-flex">
-                        <div class="toast-body" id="errorToastMessage">{{ errormessage }}</div>
-                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-                    </div>
-                    </div>
+            <div class="position-fixed top-0 end-0 p-3" style="z-index: 1100;">
+                <div id="errorToast" class="toast d-none align-items-center text-bg-danger border-0" role="alert"
+                    aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body" id="errorToastMessage"></div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
                 </div>
-            {% endif %}
-    <form method="post">
+                </div>
+            </div>
+    <form method="post" id="taskForm">
         {% if projects %}
 
         <!-- Labels in a row, NOT flexed with inputs -->
@@ -149,16 +149,16 @@
             </div>
             {% endif %}
             <div class="me-3" style="width: 20%;">
-                <select class="form-select" id="assign_to" name="assign_to">
-                    <option>Select Assigning to Employee <strong>*</strong></option>
+                <select class="form-select required" id="assign_to" name="assign_to">
+                    <option value="">Select Assigning to Employee</option>
                     {% for e in empNames %}
                     <option value="{{e.id}}">{{ e.name }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div style="width: 20%;">
-                <select class="form-select project_code" id="project_code" onchange="updateProjectName()" name="project_code">
-                    <option>Select Project Code <strong>*</strong></option>
+                <select class="form-select project_code required" id="project_code" onchange="updateProjectName()" name="project_code">
+                    <option value="">Select Project Code</option>
                     {% for p in projects %}
                         <option value="{{ p.code }}">{{ p.code }}</option>
                     {% endfor %}
@@ -173,7 +173,7 @@
         </div>
         <div class="mb-3" style="width: 62.4%;">
             <label for="project_name" class="form-label">Task Description <strong>*</strong></label>
-            <textarea class="form-control task_desc" name="task_desc" id="task_desc" placeholder="Enter Task Description"></textarea>
+            <textarea class="form-control task_desc required" name="task_desc" id="task_desc" placeholder="Enter Task Description"></textarea>
         </div>
         <!-- <div class="mb-3" style="width: 30%;">
             <label for="task_status">Task Status (By Default Pending)</label>
@@ -181,10 +181,10 @@
         </div> -->
         <div class="mb-3" style="width: 30%;">
             <label for="project_name" class="form-label">Assigned By <strong>*</strong></label>
-            <input type="text" class="form-control" id="assigned_by" name="assigned_by" value="{{session['emp_name']}}" readonly>
+            <input type="text" class="form-control required" id="assigned_by" name="assigned_by" value="{{session['emp_name']}}" readonly>
             <label for="work_type" style="margin-top: 1rem;">Select Work Type <strong>*</strong></label>
-            <select name="work_type" id="work_type" class="form-select">
-                <option>Select Work Type</option>
+            <select name="work_type" id="work_type" class="form-select required">
+                <option value="">Select Work Type</option>
                 {% for type in work_type %}
                 <option value="{{type.id}}">{{type.type}}</option>
                 {% endfor %}
@@ -197,7 +197,7 @@
             <label for="project_name" class="form-label">Remarks</label>
             <textarea class="form-control" id="remarks" name="remarks" placeholder="Please Enter Remarks"></textarea>
         </div>
-        <button id="submitBtn" type="submit" class="btn btn-outline-success">Save Details</button>
+        <button id="submitBtn" type="submit" class="btn btn-outline-success" onclick="validateForm()">Assign Task</button>
         <button id="viewListings" type="button" class="btn btn-outline-primary">View Listings</button>
 
         <!-- {% if errormessage %}
@@ -207,23 +207,23 @@
         {% endif %} -->
 
         {% endif %}
-        {% if message %}
-            <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1100">
-  <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true" id="myToast">
-    <div class="toast-header">
-      <img src="..." class="rounded me-2" alt="...">
-      <strong class="me-auto">Server Message</strong>
-      <small id="toast-timer">Now</small>
-      <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
-    </div>
-    <div class="toast-body">
-      {{ message }}
-    </div>
-  </div>
-</div>
+        <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1100">
+        <div
+            id="successToast"
+            class="toast d-none text-bg-success border-0"
+            role="alert"
+            aria-live="assertive"
+            aria-atomic="true"
+        >
+            <div class="toast-header">
+            <strong class="me-auto">Server Message</strong>
+            <small>Now</small>
+            <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body" id="successToastMessage"></div>
+        </div>
+        </div>
 
-</div>
-        {% endif %}
     </form>
         </div>
     </div>
@@ -240,5 +240,89 @@
         }
         });
     </script>
+    <script>
+        document.getElementById("taskForm").addEventListener("submit", function (e) {
+            e.preventDefault();  // stop page refresh
+
+            const form = e.target;
+            const formData = new FormData(form);
+
+            fetch("/tasks_assigned", {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.json().then(data => ({
+                status: response.status,
+                body: data
+            })))
+            .then(result => {
+                if (result.status === 400) {
+                    showErrorToast(result.body.message);
+                } else if (result.status === 200) {
+                    showSuccessToast(result.body.message);
+                    form.reset();   // optional
+                }
+            })
+            .catch(err => {
+                showErrorToast("Something went wrong. Please try again.");
+                console.error(err);
+            });
+        });
+    </script>
+    <script>
+        function showErrorToast(message) {
+            const toastEl = document.getElementById("errorToast");
+            const messageEl = document.getElementById("errorToastMessage");
+
+            messageEl.textContent = message;
+            toastEl.classList.remove("d-none");
+
+            const toast = new bootstrap.Toast(toastEl);
+            toast.show();
+        }
+        function showSuccessToast(message) {
+            const toastEl = document.getElementById("successToast");
+            const messageEl = document.getElementById("successToastMessage");
+
+            messageEl.textContent = message;
+            toastEl.classList.remove("d-none");
+
+            const toast = new bootstrap.Toast(toastEl, { delay: 4000 });
+            toast.show();
+        }
+
+    </script>
+
+    <script>
+        function validateForm() {
+            let isValid = true;
+
+            document.querySelectorAll('.required').forEach(field => {
+                if (!field.value || field.value.trim() === '') {
+                    field.classList.add('is-invalid');
+                    isValid = false;
+                } else {
+                    field.classList.remove('is-invalid');
+                }
+            });
+
+            if (!isValid) {
+                showErrorToast("Please fill all details with *");
+            }
+
+            return isValid;
+        }
+
+        // Remove red border as user types/selects
+        document.querySelectorAll('.required-field').forEach(field => {
+            field.addEventListener('input', () => {
+                if (field.value.trim() !== '') {
+                    field.classList.remove('is-invalid');
+                }
+            });
+        });
+    </script>
+
+
 </body>
 </html>

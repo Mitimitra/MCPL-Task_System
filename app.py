@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, session, jsonify, send_file
 from datetime import datetime, timedelta, date
 from dateutil.relativedelta import relativedelta
+from flask_mail import Mail, Message
 import pdfkit
 from io import BytesIO
 import psycopg2
@@ -255,21 +256,29 @@ def project_history():
         isReworkNull = (rework == '' or rework == None)
         
 
-        if workTypenull or projectCodenull or timeSpentNull or projectCodeNull or eventDescNull or assignerNull or isHistoryNull or isReworkNull:
-            errormessage = "Please Fill All Details with *"
-            return render_template('project_history.html', projects=projects, work_type=work_type, today=today, errormessage=errormessage, empNames=empNames)
-        # if workTypenull:
-        #     return render_template('project_history.html', projects=projects, work_type=work_type, today=today, errormessage="Please fill Work Type", empNames=empNames)
-        # if projectCodenull:
-        #     return render_template('project_history.html', projects=projects, work_type=work_type, today=today, errormessage="Please fill Project Code", empNames=empNames)
-        # if timeSpentNull:
-        #     return render_template('project_history.html', projects=projects, work_type=work_type, today=today, errormessage="Please fill Time Spent", empNames=empNames)
-        # if projectCodeNull:
-        #     return render_template('project_history.html', projects=projects, work_type=work_type, today=today, errormessage="Please Select Project", empNames=empNames)
-        # if eventDescNull:
-        #     return render_template('project_history.html', projects=projects, work_type=work_type, today=today, errormessage="Please fill Event Description", empNames=empNames)
-        # if assignerNull:
-        #     return render_template('project_history.html', projects=projects, work_type=work_type, today=today, errormessage="Please Select Task Assigner Name", empNames=empNames)
+        missing_fields = []
+
+        if workTypenull:
+            missing_fields.append("work_type")
+        if projectCodenull:
+            missing_fields.append("project_code")
+        if timeSpentNull:
+            missing_fields.append("time_spent")
+        if eventDescNull:
+            missing_fields.append("event_desc")
+        if assignerNull:
+            missing_fields.append("task_assigned_by")
+        if isHistoryNull or isReworkNull:
+            pass  # radios not bordered
+
+        if missing_fields:
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return jsonify({
+                    "status": "error",
+                    "message": "Please Fill All Details with *",
+                    "missing_fields": missing_fields
+                }), 400
+
 
         # Get ProjectID and UserID from database
         cursor.execute('SELECT "ProjectID" FROM "ProjectMaster" WHERE "ProjectCode" = %s', (project_code,))
@@ -311,12 +320,11 @@ def project_history():
                 conn.commit()
                 message = "Record Saved Successfully"
 
-            return render_template("project_history.html",
-                                   message=message,
-                                   projects=projects,
-                                   today=today,
-                                   work_type=work_type,
-                                   empNames=empNames)
+            return jsonify({
+                "status": "success",
+                "message": message
+            })
+
 
         else:
             err_msg = "Invalid Project or User"
@@ -561,7 +569,8 @@ def tasks_assigned():
         
         if workTypenull or projectCodenull or assignToNull or projectNameNull or eventDescNull or assignToNull:
             errormessage = "Please Fill All Details with *"
-            return render_template('tasks_assigned.html', projects=projects, work_type=work_type, today=today, errormessage=errormessage, empNames=empNames)
+            return jsonify({"status":"error","message": errormessage}),400
+            # return render_template('tasks_assigned.html', projects=projects, work_type=work_type, today=today, errormessage=errormessage, empNames=empNames)
         
         cursor.execute(' SELECT "ProjectID" FROM "ProjectMaster" WHERE "ProjectCode" = %s ',(data["project_code"],))
         project_id = cursor.fetchone()
@@ -589,9 +598,19 @@ def tasks_assigned():
 	                VALUES (%s, %s, %s, %s, %s, %s,True,%s,%s,'Pending',%s);
             ''', (project_id[0], user_assigned_by[0], data['assign_to'], data['entry_date'], task_desc, data['remarks'],data['entry_date'],data["work_type"],data['target_date']))
             conn.commit()
-            # send_task_assignment_email(assign_to_email[0],data['assigned_by'],data["project_code"], data["task_desc"],session['designation'],data['target_date'],data['project_name'],assign_to_email[1])
             
-            return render_template("tasks_assigned.html",projects=projects, today=today, empNames=empNames, message="Task Assigned Successfully",work_type=work_type)
+            cursor.execute(""" SELECT "EmpName","UserEmail" FROM "UserMaster" WHERE "UserID" = %s """,[data['assign_to'],])
+            
+            assign_to_email = cursor.fetchone()
+            
+            send_task_assignment_email(app,assign_to_email[0],data['assigned_by'],data["project_code"], data["task_desc"],session['designation'],data['target_date'],data['project_name'],assign_to_email[1])
+            
+            return jsonify({
+                "status": "success",
+                "message": "Task Assigned Successfully"
+            })
+
+            # return render_template("tasks_assigned.html",projects=projects, today=today, empNames=empNames, message="Task Assigned Successfully",work_type=work_type)
             
             
 
@@ -1236,6 +1255,21 @@ def view_and_edit_meetings():
         cursor.close()
         conn.close()
 
+
+# @app.route('/demo_email')
+# def send_demo_mail():
+#     app.config['MAIL_SERVER'] = 'smtp.zoho.in' # Or smtp.zoho.eu if based in Europe
+#     app.config['MAIL_PORT'] = 465 # Use 465 with SSL or 587 with TLS
+#     app.config['MAIL_USE_SSL'] = True
+#     app.config['MAIL_USE_TLS'] = False # Set to True if using port 587
+#     app.config['MAIL_USERNAME'] = 'maheshmw@zohomail.in'
+#     app.config['MAIL_PASSWORD'] = 'bt3kKiHGGFft' # bt3kKiHGGFft
+#     app.config['MAIL_DEFAULT_SENDER'] = 'maheshmw@zohomail.in'
+#     mail = Mail(app)
+#     msg = Message("Hello from Flask!", recipients=["nimishgodbole409@gmail.com"])
+#     msg.body = "This is a test email sent from Flask using Zoho Mail SMTP."
+#     mail.send(msg)
+#     return "Email sent!"
 
 
 if __name__ == '__main__':
