@@ -4,21 +4,12 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from flask_mail import Mail, Message
 
-
-def send_task_assignment_email(app,to_email, assigner_name, project_code, task_details, designation, deadline, project_name, assigned_to_email):
+def send_task_assignment_email(mail,to_email, assigner_name, project_code, task_details, designation, deadline, project_name, assigned_to_email):
     # sender_email = "mitimitra@gmail.com"
     # sender_password = "qrlycwlicirmbeuk"
-    
-    app.config['MAIL_SERVER'] = 'smtp.zoho.in' # Or smtp.zoho.eu if based in Europe
-    app.config['MAIL_PORT'] = 465 # Use 465 with SSL or 587 with TLS
-    app.config['MAIL_USE_SSL'] = True
-    app.config['MAIL_USE_TLS'] = False # Set to True if using port 587
-    app.config['MAIL_USERNAME'] = 'mcpl-task-system@zohomail.in'
-    app.config['MAIL_PASSWORD'] = 'ui0W88e7LAeR' # App Password
-    app.config['MAIL_DEFAULT_SENDER'] = 'mcpl-task-system@zohomail.in'
-    mail = Mail(app)
 
     # Ensure `deadline` is a string in 'YYYY-MM-DD' format first
+    
     deadline = datetime.strptime(str(deadline), "%Y-%m-%d").strftime("%d-%m-%Y")
 
 

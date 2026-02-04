@@ -603,7 +603,15 @@ def tasks_assigned():
             
             assign_to_email = cursor.fetchone()
             
-            send_task_assignment_email(app,assign_to_email[0],data['assigned_by'],data["project_code"], data["task_desc"],session['designation'],data['target_date'],data['project_name'],assign_to_email[1])
+            app.config['MAIL_SERVER'] = 'smtp.zoho.in' # Or smtp.zoho.eu if based in Europe
+            app.config['MAIL_PORT'] = 465 # Use 465 with SSL or 587 with TLS
+            app.config['MAIL_USE_SSL'] = True
+            app.config['MAIL_USE_TLS'] = False # Set to True if using port 587
+            app.config['MAIL_USERNAME'] = 'mcpl-task-system@zohomail.in'
+            app.config['MAIL_PASSWORD'] = 'ui0W88e7LAeR' # App Password
+            app.config['MAIL_DEFAULT_SENDER'] = 'mcpl-task-system@zohomail.in'
+            
+            send_task_assignment_email(Mail(app),assign_to_email[0],data['assigned_by'],data["project_code"], data["task_desc"],session['designation'],data['target_date'],data['project_name'],assign_to_email[1])
             
             return jsonify({
                 "status": "success",
