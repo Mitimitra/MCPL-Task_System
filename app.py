@@ -88,10 +88,24 @@ def dashboard():
                        FROM "ProjectHistory" ph
                        JOIN "UserMaster" um ON ph."UserID" = um."UserID"
                        JOIN "ProjectMaster" pm ON ph."ProjectID" = pm."ProjectID"
-                       WHERE ph."ChangeStatus?" = true AND ph."AssignedBy" = %s ORDER BY ph."ProjectHistoryID" ASC """,(user_id,))
+                       WHERE ph."ChangeStatus?" = true AND ph."AssignedBy" = %s ORDER BY ph."ProjectHistoryID" DESC """,(user_id,))
         
         tasks_under_review = [{"SrNo" : row[0], "task_description" : row[1] , "assigned_to" : row[2], "project_details" : row[3]+" : "+row[4], "remarks": row[5], "status": row[6],"target_date":row[7], "date_of_entry" : row[8]}for row in cursor.fetchall()]
         print("Tasks Under Review",tasks_under_review)
+        
+        cursor.execute(""" SELECT DISTINCT um."EmpName" FROM "ProjectHistory" ph JOIN "UserMaster" um ON ph."UserID" = um."UserID" WHERE ph."ChangeStatus?" = true AND ph."AssignedBy" = %s ORDER BY um."EmpName" ASC """,(user_id,))
+        filtered_name = [{ "name": row[0] } for row in cursor.fetchall()]
+        
+        cursor.execute("""SELECT DISTINCT um."EmpName" FROM "ProjectHistory" ph JOIN "UserMaster" um ON ph."AssignedBy" = um."UserID" WHERE ph."ChangeStatus?" = true AND ph."UserID" = %s ORDER BY um."EmpName" ASC """,(user_id,))
+        assigned_tasks_filter_name = [{ "name": row[0] } for row in cursor.fetchall()]
+
+        
+        # cursor.execute(""" SELECT DISTINCT pm."ProjectCode" FROM "ProjectHistory" ph JOIN "ProjectMaster" pm ON ph."ProjectID" = pm."ProjectID" WHERE ph."ChangeStatus?" = true AND ph."AssignedBy" = %s ORDER BY pm."ProjectCode" ASC """,(user_id,))
+        # filtered_projCode = [{ "code": row[0] } for row in cursor.fetchall()]
+        
+        # cursor.execute(""" SELECT DISTINCT "TargetDate" FROM "ProjectHistory" WHERE ph."ChangeStatus?" = true AND ph."AssignedBy" = %s ORDER BY um."EmpName" ASC """,(user_id,))
+        # filtered_date = [{ "target_date": row[0] } for row in cursor.fetchall()]
+        
         
         cursor.execute("""
                        SELECT "EmpName", "DateOfJoining", "DateOfBirth", "UserEmail" FROM "UserMaster"
@@ -104,7 +118,7 @@ def dashboard():
         
         
         
-        return render_template("dashboard.html",assigned_tasks=assigned_tasks,tasks_under_review=tasks_under_review,designations=designations,branches=branches,projects=projects, users=users, employee_list=employee_list)
+        return render_template("dashboard.html",assigned_tasks_filter_name=assigned_tasks_filter_name,filtered_name=filtered_name,assigned_tasks=assigned_tasks,tasks_under_review=tasks_under_review,designations=designations,branches=branches,projects=projects, users=users, employee_list=employee_list)
     else:
         return render_template("login.html", message="Your session has been timed out. Please Log in again.")
     

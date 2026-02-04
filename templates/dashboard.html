@@ -20,8 +20,8 @@
     <script>
 function applyReviewFilters() {
   const assignedTo = document.getElementById("filterAssignedTo").value.toLowerCase();
-  const deadline = document.getElementById("filterDeadlineReview").value;
-  const projectCode = document.getElementById("filterProjectReview").value.toLowerCase();
+  //const deadline = document.getElementById("filterDeadlineReview").value;
+  //const projectCode = document.getElementById("filterProjectReview").value.toLowerCase();
 
   const table = document.getElementById("tasksUnderReviewTable");
   const rows = table.getElementsByTagName("tr");
@@ -31,12 +31,12 @@ function applyReviewFilters() {
     const cols = rows[i].getElementsByTagName("td");
 
     const colAssignedTo = cols[2]?.innerText.toLowerCase();
-    const colProjectCode = cols[3]?.innerText.toLowerCase();
-    const colDeadline = cols[5]?.innerText;
+    //const colProjectCode = cols[3]?.innerText.toLowerCase();
+    //const colDeadline = cols[5]?.innerText;
 
     if (assignedTo && colAssignedTo !== assignedTo) show = false;
-    if (projectCode && !colProjectCode.includes(projectCode)) show = false;
-    if (deadline && colDeadline !== deadline) show = false;
+    //if (projectCode && !colProjectCode.includes(projectCode)) show = false;
+    //if (deadline && colDeadline !== deadline) show = false;
 
     rows[i].style.display = show ? "" : "none";
   }
@@ -143,18 +143,18 @@ function applyReviewFilters() {
     <label for="filterAssignedTo" class="form-label">Assigned To</label>
     <select id="filterAssignedTo" class="form-select">
       <option value="">All</option>
-      {% for task in tasks_under_review %}
-        <option value="{{task.assigned_to}}">{{task.assigned_to}}</option>
+      {% for name in filtered_name %}
+        <option value="{{name.name}}">{{name.name}}</option>
       {% endfor %}
     </select>
   </div>
 
-  <div class="col-md-3">
+  <!-- <div class="col-md-3">
     <label for="filterDeadlineReview" class="form-label">Deadline</label>
     <select id="filterDeadlineReview" class="form-select">
       <option value="">All</option>
-      {% for task in tasks_under_review %}
-        <option value="{{task.target_date}}">{{task.target_date}}</option>
+      {% for name in filtered_name %}
+        <option value="{{name.target_date}}">{{name.target_date}}</option>
       {% endfor %}
     </select>
   </div>
@@ -163,11 +163,11 @@ function applyReviewFilters() {
     <label for="filterProjectReview" class="form-label">Project Code</label>
     <select id="filterProjectReview" class="form-select">
       <option value="">All</option>
-      {% for task in tasks_under_review %}
-        <option value="{{task.project_details.split(':')[0]}}">{{task.project_details.split(':')[0]}}</option>
+      {% for name in filtered_name %}
+        <option value="{{name.project_code}}">{{name.project_code}}</option>
       {% endfor %}
     </select>
-  </div>
+  </div> -->
 
   <div class="col-md-3 d-flex align-items-end">
     <button class="btn btn-primary w-100" onclick="applyReviewFilters()">Apply Filters</button>
@@ -223,13 +223,13 @@ function applyReviewFilters() {
     <label for="filterAssignedBy" class="form-label">Assigned By</label>
     <select id="filterAssignedBy" class="form-select">
       <option value="">All</option>
-      {% for task in assigned_tasks %}
-        <option value="{{task.assigned_to}}">{{task.assigned_to}}</option>
+      {% for name in assigned_tasks_filter_name %}
+        <option value="{{name.name}}">{{name.name}}</option>
       {% endfor %}
     </select>
   </div>
 
-  <div class="col-md-3">
+  <!-- <div class="col-md-3">
     <label for="filterDeadlineAssigned" class="form-label">Deadline</label>
     <select id="filterDeadlineAssigned" class="form-select">
       <option value="">All</option>
@@ -247,7 +247,7 @@ function applyReviewFilters() {
         <option value="{{task.project_details.split(':')[0]}}">{{task.project_details.split(':')[0]}}</option>
       {% endfor %}
     </select>
-  </div>
+  </div> -->
 
   <div class="col-md-3 d-flex align-items-end">
     <button class="btn btn-primary w-100" onclick="applyAssignedFilters()">Apply Filters</button>
@@ -298,8 +298,8 @@ function applyReviewFilters() {
 <script>
 function applyAssignedFilters() {
   const assignedBy = document.getElementById("filterAssignedBy").value.toLowerCase();
-  const deadline = document.getElementById("filterDeadlineAssigned").value;
-  const projectCode = document.getElementById("filterProjectAssigned").value.toLowerCase();
+  //const deadline = document.getElementById("filterDeadlineAssigned").value;
+  //const projectCode = document.getElementById("filterProjectAssigned").value.toLowerCase();
 
   const table = document.getElementById("tasksAssignedTable");
   const rows = table.getElementsByTagName("tr");
@@ -309,12 +309,12 @@ function applyAssignedFilters() {
     const cols = rows[i].getElementsByTagName("td");
 
     const colAssignedBy = cols[1]?.innerText.toLowerCase();
-    const colProjectCode = cols[2]?.innerText.toLowerCase();
-    const colDeadline = cols[4]?.innerText;
+    //const colProjectCode = cols[2]?.innerText.toLowerCase();
+    //const colDeadline = cols[4]?.innerText;
 
     if (assignedBy && colAssignedBy !== assignedBy) show = false;
-    if (projectCode && !colProjectCode.includes(projectCode)) show = false;
-    if (deadline && colDeadline !== deadline) show = false;
+    //if (projectCode && !colProjectCode.includes(projectCode)) show = false;
+    //if (deadline && colDeadline !== deadline) show = false;
 
     rows[i].style.display = show ? "" : "none";
   }
@@ -364,7 +364,7 @@ function applyAssignedFilters() {
 
       <div class="modal-body" style="overflow: scroll;">
         <div class="mb-3">
-          <label for="reviewUpdateText" class="form-label">Enter Task Updates</label>
+          <label for="reviewUpdateText" class="form-label" id="revieUpdateLabel">Enter Task Updates</label>
           <textarea class="form-control" id="reviewUpdateText" rows="3" required></textarea>
         </div>
         <div class="mb-3">
@@ -1080,7 +1080,7 @@ function openReviewModal(taskId) {
     console.log(taskDescElement);
     console.log(remarksElement);
 
-    document.getElementById("reviewUpdateText").placeholder = taskDescElement ? taskDescElement.value || taskDescElement.innerText : '';
+    document.getElementById("revieUpdateLabel").innerText = taskDescElement ? taskDescElement.value || taskDescElement.innerText : '';
     document.getElementById("reviewRemarks").placeholder = remarksElement ? remarksElement.value || remarksElement.innerText : '';
 
     // Show the modal
