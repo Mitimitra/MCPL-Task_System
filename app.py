@@ -599,19 +599,19 @@ def tasks_assigned():
             ''', (project_id[0], user_assigned_by[0], data['assign_to'], data['entry_date'], task_desc, data['remarks'],data['entry_date'],data["work_type"],data['target_date']))
             conn.commit()
             
-            cursor.execute(""" SELECT "EmpName","UserEmail" FROM "UserMaster" WHERE "UserID" = %s """,[data['assign_to'],])
+            # cursor.execute(""" SELECT "EmpName","UserEmail" FROM "UserMaster" WHERE "UserID" = %s """,[data['assign_to'],])
             
-            assign_to_email = cursor.fetchone()
+            # assign_to_email = cursor.fetchone()
             
-            app.config['MAIL_SERVER'] = 'smtp.zoho.in' # Or smtp.zoho.eu if based in Europe
-            app.config['MAIL_PORT'] = 465 # Use 465 with SSL or 587 with TLS
-            app.config['MAIL_USE_SSL'] = True
-            app.config['MAIL_USE_TLS'] = False # Set to True if using port 587
-            app.config['MAIL_USERNAME'] = 'mcpl-task-system@zohomail.in'
-            app.config['MAIL_PASSWORD'] = 'ui0W88e7LAeR' # App Password
-            app.config['MAIL_DEFAULT_SENDER'] = 'mcpl-task-system@zohomail.in'
+            # app.config['MAIL_SERVER'] = 'smtp.zoho.in' # Or smtp.zoho.eu if based in Europe
+            # app.config['MAIL_PORT'] = 465 # Use 465 with SSL or 587 with TLS
+            # app.config['MAIL_USE_SSL'] = True
+            # app.config['MAIL_USE_TLS'] = False # Set to True if using port 587
+            # app.config['MAIL_USERNAME'] = 'mcpl-task-system@zohomail.in'
+            # app.config['MAIL_PASSWORD'] = 'ui0W88e7LAeR' # App Password
+            # app.config['MAIL_DEFAULT_SENDER'] = 'mcpl-task-system@zohomail.in'
             
-            send_task_assignment_email(Mail(app),assign_to_email[0],data['assigned_by'],data["project_code"], data["task_desc"],session['designation'],data['target_date'],data['project_name'],assign_to_email[1])
+            # send_task_assignment_email(Mail(app),assign_to_email[0],data['assigned_by'],data["project_code"], data["task_desc"],session['designation'],data['target_date'],data['project_name'],assign_to_email[1])
             
             return jsonify({
                 "status": "success",
