@@ -38,6 +38,6 @@ def send_task_assignment_email(mail,to_email, assigner_name, project_code, task_
     
     print(assigned_to_email)
     
-    msg = Message(subject=subject, recipients=[assigned_to_email], cc=cc_email)
+    msg = Message(subject=subject, recipients=[assigned_to_email], cc=[cc_email])
     msg.html = full_body
     mail.send(msg)
